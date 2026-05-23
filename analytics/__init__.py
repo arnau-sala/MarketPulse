@@ -1,0 +1,1 @@
+"""Backend analítico MarketPulse UK."""
