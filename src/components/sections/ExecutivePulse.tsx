@@ -1,4 +1,4 @@
-import { TrendingDown, Target, Percent, DollarSign, BarChart2 } from 'lucide-react';
+import { TrendingDown, Target, DollarSign, BarChart2 } from 'lucide-react';
 import { monthlyMetrics } from '../../data/mockData';
 import { formatCurrency, progressValue } from '../../utils/formatters';
 import SectionHeader from '../common/SectionHeader';
@@ -6,12 +6,16 @@ import MetricCard from '../common/MetricCard';
 import InsightCard from '../common/InsightCard';
 import StatusBadge from '../common/StatusBadge';
 import ProgressBar from '../common/ProgressBar';
-import ForecastChart from '../charts/ForecastChart';
+import SalesMomentumChart from '../charts/SalesMomentumChart';
+import { useTargetPlan } from '../../context/TargetContext';
 
 export default function ExecutivePulse() {
   const m = monthlyMetrics;
-  const progress = progressValue(m.salesToDate, m.monthlyTarget);
-  const forecastProgress = progressValue(m.baselineForecast, m.monthlyTarget);
+  const { currentMonthTarget } = useTargetPlan();
+  const progress = progressValue(m.salesToDate, currentMonthTarget);
+  const expectedGap = m.baselineForecast - currentMonthTarget;
+  const balancedRecoveryForecast = m.baselineForecast + 136000;
+  const balancedRecoveryGap = balancedRecoveryForecast - currentMonthTarget;
 
   return (
     <div className="space-y-6">
@@ -32,7 +36,7 @@ export default function ExecutivePulse() {
             <span className="text-danger">10% below target</span> in March 2025.
           </p>
           <p className="text-[13px] text-ink-500 mt-1">
-            Baseline forecast: {formatCurrency(m.baselineForecast, true)} vs target: {formatCurrency(m.monthlyTarget, true)} — gap of {formatCurrency(m.expectedGap, true)}.
+            Baseline forecast: {formatCurrency(m.baselineForecast, true)} vs target: {formatCurrency(currentMonthTarget, true)} — gap of {formatCurrency(expectedGap, true)}.
           </p>
         </div>
         <div className="text-right flex-shrink-0">
@@ -52,7 +56,7 @@ export default function ExecutivePulse() {
         />
         <MetricCard
           title="Monthly target"
-          value={formatCurrency(m.monthlyTarget, true)}
+          value={formatCurrency(currentMonthTarget, true)}
           subtitle="March 2025 objective"
           tone="neutral"
           icon={<Target size={16} />}
@@ -60,14 +64,14 @@ export default function ExecutivePulse() {
         <MetricCard
           title="Forecasted close"
           value={formatCurrency(m.baselineForecast, true)}
-          delta={`${formatCurrency(m.expectedGap, true)} vs target`}
+          delta={`${formatCurrency(expectedGap, true)} vs target`}
           tone="warning"
           icon={<BarChart2 size={16} />}
         />
         <MetricCard
           title="Expected gap"
-          value={formatCurrency(m.expectedGap, true)}
-          delta={`${(Math.abs(m.expectedGap) / m.monthlyTarget * 100).toFixed(0)}% below target`}
+          value={formatCurrency(expectedGap, true)}
+          delta={`${(Math.abs(expectedGap) / currentMonthTarget * 100).toFixed(0)}% below target`}
           tone="danger"
           icon={<TrendingDown size={16} />}
         />
@@ -82,14 +86,14 @@ export default function ExecutivePulse() {
               <span className="text-[12px] text-ink-700 font-medium">Sales to date</span>
               <span className="text-[12px] font-semibold text-ink-900">{formatCurrency(m.salesToDate, true)}</span>
             </div>
-            <ProgressBar value={m.salesToDate} max={m.monthlyTarget} tone="warning" />
+            <ProgressBar value={m.salesToDate} max={currentMonthTarget} tone="warning" />
           </div>
           <div>
             <div className="flex justify-between mb-1">
               <span className="text-[12px] text-ink-700 font-medium">Baseline forecast</span>
               <span className="text-[12px] font-semibold text-warning">{formatCurrency(m.baselineForecast, true)}</span>
             </div>
-            <ProgressBar value={m.baselineForecast} max={m.monthlyTarget} tone="warning" />
+            <ProgressBar value={m.baselineForecast} max={currentMonthTarget} tone="warning" />
           </div>
           <div>
             <div className="flex justify-between mb-1">
@@ -97,30 +101,20 @@ export default function ExecutivePulse() {
                 After Balanced Recovery plan
                 <span className="ml-2 text-[10px] bg-success-light text-success px-1.5 py-0.5 rounded-full font-semibold">+£136k</span>
               </span>
-              <span className="text-[12px] font-semibold text-success">£1.22M</span>
+              <span className="text-[12px] font-semibold text-success">{formatCurrency(balancedRecoveryForecast, true)}</span>
             </div>
-            <ProgressBar value={1216000} max={m.monthlyTarget} tone="success" />
+            <ProgressBar value={balancedRecoveryForecast} max={currentMonthTarget} tone="success" />
           </div>
           <div className="pt-1 border-t border-ink-100">
             <div className="flex justify-between">
               <span className="text-[11px] text-ink-500">Monthly target</span>
-              <span className="text-[11px] font-bold text-ink-900">{formatCurrency(m.monthlyTarget, true)}</span>
+              <span className="text-[11px] font-bold text-ink-900">{formatCurrency(currentMonthTarget, true)}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Forecast chart */}
-      <div className="bg-white rounded-2xl border border-ink-300/60 shadow-card px-5 py-5">
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-[13px] font-semibold text-ink-900">Forecast vs target trajectory</p>
-          <div className="flex items-center gap-1">
-            <Percent size={12} className="text-ink-400" />
-            <span className="text-[11px] text-ink-500">March 2025 · Daily view</span>
-          </div>
-        </div>
-        <ForecastChart />
-      </div>
+      <SalesMomentumChart />
 
       {/* Insight */}
       <InsightCard title="Executive insight" tone="warning">

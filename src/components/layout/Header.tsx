@@ -1,4 +1,4 @@
-import { Clock, ChevronDown } from 'lucide-react';
+import { Clock, ChevronDown, Menu, X } from 'lucide-react';
 import { monthlyMetrics } from '../../data/mockData';
 import StatusBadge from '../common/StatusBadge';
 
@@ -26,11 +26,29 @@ function MockSelect({ label, options }: SelectProps) {
   );
 }
 
-export default function Header() {
+interface HeaderProps {
+  open: boolean;
+  onToggle: () => void;
+}
+
+export default function Header({ open, onToggle }: HeaderProps) {
   return (
-    <header className="fixed top-0 left-60 right-0 h-14 bg-cream-50/95 backdrop-blur-sm border-b border-ink-300/60 z-20 flex items-center px-6 gap-4">
+    <header
+      className="fixed top-0 right-0 h-14 bg-cream-50/95 backdrop-blur-sm border-b border-ink-300/60 z-20 flex items-center px-4 sm:px-6 gap-4 transition-[left] duration-300 ease-out"
+      style={{ left: open ? '240px' : '0px' }}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label={open ? 'Close sidebar' : 'Open sidebar'}
+        aria-pressed={open}
+        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-ink-300/70 bg-white text-ink-700 transition-colors hover:border-ink-500 hover:text-ink-900"
+      >
+        {open ? <X size={16} /> : <Menu size={16} />}
+      </button>
+
       {/* Market & month */}
-      <div className="flex items-center gap-3 mr-auto">
+      <div className="flex items-center gap-3 mr-auto min-w-0">
         <div>
           <span className="text-[13px] font-semibold text-ink-900">{monthlyMetrics.market}</span>
           <span className="text-[13px] text-ink-500 mx-1.5">·</span>
