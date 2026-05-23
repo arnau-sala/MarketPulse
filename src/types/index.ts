@@ -22,6 +22,7 @@ export interface MonthlyMetrics {
 
 export interface ForecastPoint {
   day: string;
+  isoDate?: string;        // "2025-12-15" — present when data comes from real API
   actual: number | null;
   target: number;
   forecast: number | null;

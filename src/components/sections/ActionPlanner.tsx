@@ -1,64 +1,107 @@
 import { useState } from 'react';
-import { CheckCircle2, Star, TrendingUp, AlertTriangle, Shield } from 'lucide-react';
-import { actionPlans } from '../../data/mockData';
+import { CheckCircle2, Star, TrendingUp, AlertTriangle, Shield, Sparkles, Loader2 } from 'lucide-react';
+import { useActionPlans, useMetrics } from '../../hooks/useMarketPulse';
 import { formatCurrency } from '../../utils/formatters';
+import { explainPlan } from '../../services/api';
 import SectionHeader from '../common/SectionHeader';
 import InsightCard from '../common/InsightCard';
 import StatusBadge from '../common/StatusBadge';
 import ProgressBar from '../common/ProgressBar';
 import type { ActionPlan, Tone } from '../../types';
 
-const riskTone: Record<string, Tone> = {
-  Low:    'success',
-  Medium: 'warning',
-  High:   'danger',
-};
-
+const riskTone: Record<string, Tone> = { Low: 'success', Medium: 'warning', High: 'danger' };
+const riskLabel: Record<string, string> = { Low: 'Riesgo bajo', Medium: 'Riesgo medio', High: 'Riesgo alto' };
 const riskIcon: Record<string, React.ReactNode> = {
-  Low:    <Shield size={14} />,
+  Low: <Shield size={14} />,
   Medium: <AlertTriangle size={14} />,
-  High:   <TrendingUp size={14} />,
+  High: <TrendingUp size={14} />,
 };
 
-function confidenceLabel(c: number) {
-  if (c >= 80) return { label: 'High confidence', tone: 'success' as Tone };
-  if (c >= 65) return { label: 'Medium confidence', tone: 'warning' as Tone };
-  return { label: 'Lower confidence', tone: 'neutral' as Tone };
+function confidenceLabel(c: number): { label: string; tone: Tone } {
+  if (c >= 80) return { label: 'Alta confianza', tone: 'success' };
+  if (c >= 65) return { label: 'Confianza media', tone: 'warning' };
+  return { label: 'Confianza baja', tone: 'neutral' };
 }
 
 export default function ActionPlanner() {
-  const defaultPlan = actionPlans.find((p) => p.recommended)?.id ?? actionPlans[0].id;
-  const [selectedId, setSelectedId] = useState<string>(defaultPlan);
-  const selected: ActionPlan = actionPlans.find((p) => p.id === selectedId) ?? actionPlans[0];
+  const { data: plans } = useActionPlans();
+  const { data: metrics } = useMetrics();
+  const defaultId = plans.find(p => p.recommended)?.id ?? plans[0]?.id ?? 'balanced';
+  const [selectedId, setSelectedId] = useState<string>(defaultId);
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [explanationLoading, setExplanationLoading] = useState(false);
+  const [explanationModel, setExplanationModel] = useState('');
+
+  const selected: ActionPlan = plans.find(p => p.id === selectedId) ?? plans[0];
+  if (!selected) return null;
+
+  const handleExplain = async () => {
+    setExplanationLoading(true);
+    setExplanation(null);
+    try {
+      const res = await explainPlan({
+        planId: selected.id,
+        planName: selected.name,
+        goal: selected.goal,
+        expectedImpact: selected.expectedImpact,
+        hitProbability: selected.hitProbability,
+        risk: selected.risk,
+        actions: selected.actions.map(a => ({
+          title: a.title,
+          week: a.week,
+          impact: a.impact,
+          confidence: a.confidence,
+          why: a.why,
+        })),
+        gapContext: {
+          salesToDate: metrics.salesToDate,
+          monthlyTarget: metrics.monthlyTarget,
+          expectedGap: metrics.expectedGap,
+        },
+      });
+      setExplanation(res.text);
+      setExplanationModel(res.model);
+    } catch {
+      setExplanation('El servicio de explicación no está disponible. Asegúrate de que el backend está en marcha y GROQ_API_KEY está configurada.');
+    } finally {
+      setExplanationLoading(false);
+    }
+  };
+
+  // Reset explanation when the plan changes
+  const handleSelectPlan = (id: string) => {
+    setSelectedId(id);
+    setExplanation(null);
+  };
 
   return (
     <div className="space-y-6">
       <SectionHeader
-        eyebrow="04 — Action Planner"
-        title="What should we do now?"
-        description="Recommended commercial recovery plans ranked by impact, confidence and execution risk."
+        eyebrow="04 — Plan de acción"
+        title="¿Qué debemos hacer ahora?"
+        description="Planes de recuperación comercial ordenados por impacto, confianza y riesgo de ejecución."
       />
 
       {/* Plan selector */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {actionPlans.map((plan) => {
+        {plans.map(plan => {
           const isActive = plan.id === selectedId;
+          const rt = riskTone[plan.risk];
           return (
             <button
               key={plan.id}
-              onClick={() => setSelectedId(plan.id)}
-              className={`
-                relative text-left rounded-2xl border px-5 py-4 transition-all duration-150 cursor-pointer
-                ${isActive
+              onClick={() => handleSelectPlan(plan.id)}
+              className={`relative text-left rounded-2xl border px-5 py-4 transition-all duration-150 cursor-pointer ${
+                isActive
                   ? 'border-ink-900 bg-ink-900 shadow-elevated text-white'
-                  : 'border-ink-300/60 bg-white shadow-card text-ink-900 hover:border-ink-400 hover:shadow-card-hover'
-                }
-              `}
+                  : 'border-ink-300/60 bg-white shadow-card text-ink-900 hover:border-ink-400'
+              }`}
             >
               {plan.recommended && (
-                <div className={`absolute -top-2.5 left-4 flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide ${isActive ? 'bg-warning text-white' : 'bg-warning-light text-warning'}`}>
-                  <Star size={8} fill="currentColor" />
-                  Recommended
+                <div className={`absolute -top-2.5 left-4 flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide ${
+                  isActive ? 'bg-warning text-white' : 'bg-warning-light text-warning'
+                }`}>
+                  <Star size={8} fill="currentColor" /> Recomendado
                 </div>
               )}
               <p className={`text-[13px] font-bold leading-tight ${isActive ? 'text-white' : 'text-ink-900'}`}>
@@ -67,25 +110,25 @@ export default function ActionPlanner() {
               <div className="mt-2 flex items-center gap-2">
                 <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${
                   isActive
-                    ? riskTone[plan.risk] === 'success' ? 'bg-success-light/20 text-success-light border-success/40'
-                      : riskTone[plan.risk] === 'warning' ? 'bg-warning-light/20 text-warning-light border-warning/40'
+                    ? rt === 'success' ? 'bg-success-light/20 text-success-light border-success/40'
+                      : rt === 'warning' ? 'bg-warning-light/20 text-warning-light border-warning/40'
                       : 'bg-danger-light/20 text-danger-light border-danger/40'
-                    : riskTone[plan.risk] === 'success' ? 'bg-success-light text-success border-success/20'
-                      : riskTone[plan.risk] === 'warning' ? 'bg-warning-light text-warning border-warning/20'
+                    : rt === 'success' ? 'bg-success-light text-success border-success/20'
+                      : rt === 'warning' ? 'bg-warning-light text-warning border-warning/20'
                       : 'bg-danger-light text-danger border-danger/20'
                 }`}>
-                  {plan.risk} risk
+                  {riskLabel[plan.risk]}
                 </span>
               </div>
               <div className="mt-3 space-y-1">
                 <div className="flex justify-between">
-                  <span className={`text-[11px] ${isActive ? 'text-white/60' : 'text-ink-500'}`}>Expected impact</span>
+                  <span className={`text-[11px] ${isActive ? 'text-white/60' : 'text-ink-500'}`}>Impacto esperado</span>
                   <span className={`text-[12px] font-semibold ${isActive ? 'text-white' : 'text-success'}`}>
                     +{formatCurrency(plan.expectedImpact, true)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={`text-[11px] ${isActive ? 'text-white/60' : 'text-ink-500'}`}>Hit probability</span>
+                  <span className={`text-[11px] ${isActive ? 'text-white/60' : 'text-ink-500'}`}>Prob. de cumplir objetivo</span>
                   <span className={`text-[12px] font-semibold ${isActive ? 'text-white' : 'text-ink-900'}`}>
                     {plan.hitProbability}%
                   </span>
@@ -98,12 +141,11 @@ export default function ActionPlanner() {
 
       {/* Selected plan detail */}
       <div className="bg-white rounded-2xl border border-ink-300/60 shadow-card px-6 py-6 space-y-5">
-        {/* Plan header */}
         <div className="flex flex-col sm:flex-row sm:items-start gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h2 className="text-[18px] font-bold text-ink-900">{selected.name}</h2>
-              {selected.recommended && <StatusBadge status="Recommended" tone="warning" size="sm" />}
+              {selected.recommended && <StatusBadge status="Recomendado" tone="warning" size="sm" />}
             </div>
             <p className="text-[13px] text-ink-500">{selected.explanation}</p>
           </div>
@@ -111,35 +153,49 @@ export default function ActionPlanner() {
             <p className="text-[28px] font-bold text-success leading-none">
               +{formatCurrency(selected.expectedImpact, true)}
             </p>
-            <p className="text-[11px] text-ink-500 mt-0.5">Expected incremental impact</p>
+            <p className="text-[11px] text-ink-500 mt-0.5">Impacto incremental estimado</p>
           </div>
         </div>
 
         {/* KPI row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-ink-100">
           <div>
-            <p className="text-[10px] font-semibold text-ink-400 uppercase tracking-wide mb-1">Forecast after</p>
+            <p className="text-[10px] font-semibold text-ink-400 uppercase tracking-wide mb-1">Previsión con plan</p>
             <p className="text-[16px] font-bold text-ink-900">{formatCurrency(selected.forecastAfterAction, true)}</p>
           </div>
           <div>
-            <p className="text-[10px] font-semibold text-ink-400 uppercase tracking-wide mb-1">Remaining gap</p>
+            <p className="text-[10px] font-semibold text-ink-400 uppercase tracking-wide mb-1">Gap restante</p>
             <p className={`text-[16px] font-bold ${selected.remainingGap >= 0 ? 'text-success' : 'text-warning'}`}>
-              {selected.remainingGap >= 0 ? `+${formatCurrency(selected.remainingGap, true)}` : formatCurrency(selected.remainingGap, true)}
+              {selected.remainingGap >= 0
+                ? `+${formatCurrency(selected.remainingGap, true)}`
+                : formatCurrency(selected.remainingGap, true)}
             </p>
           </div>
           <div>
-            <p className="text-[10px] font-semibold text-ink-400 uppercase tracking-wide mb-1">Hit probability</p>
+            <p className="text-[10px] font-semibold text-ink-400 uppercase tracking-wide mb-1">Probabilidad de éxito</p>
             <p className="text-[16px] font-bold text-ink-900">{selected.hitProbability}%</p>
-            <ProgressBar value={selected.hitProbability} max={100} tone={selected.hitProbability >= 70 ? 'success' : 'warning'} />
+            <ProgressBar
+              value={selected.hitProbability}
+              max={100}
+              tone={selected.hitProbability >= 70 ? 'success' : 'warning'}
+            />
           </div>
           <div>
-            <p className="text-[10px] font-semibold text-ink-400 uppercase tracking-wide mb-1">Execution risk</p>
+            <p className="text-[10px] font-semibold text-ink-400 uppercase tracking-wide mb-1">Riesgo de ejecución</p>
             <div className="flex items-center gap-1 mt-1">
-              <span className={riskTone[selected.risk] === 'success' ? 'text-success' : riskTone[selected.risk] === 'warning' ? 'text-warning' : 'text-danger'}>
+              <span className={
+                riskTone[selected.risk] === 'success' ? 'text-success'
+                : riskTone[selected.risk] === 'warning' ? 'text-warning'
+                : 'text-danger'
+              }>
                 {riskIcon[selected.risk]}
               </span>
-              <span className={`text-[14px] font-bold ${riskTone[selected.risk] === 'success' ? 'text-success' : riskTone[selected.risk] === 'warning' ? 'text-warning' : 'text-danger'}`}>
-                {selected.risk}
+              <span className={`text-[14px] font-bold ${
+                riskTone[selected.risk] === 'success' ? 'text-success'
+                : riskTone[selected.risk] === 'warning' ? 'text-warning'
+                : 'text-danger'
+              }`}>
+                {riskLabel[selected.risk]}
               </span>
             </div>
           </div>
@@ -147,7 +203,9 @@ export default function ActionPlanner() {
 
         {/* Actions list */}
         <div className="space-y-3 pt-2 border-t border-ink-100">
-          <p className="text-[12px] font-semibold text-ink-500 uppercase tracking-wider">Actions in this plan</p>
+          <p className="text-[12px] font-semibold text-ink-500 uppercase tracking-wider">
+            Acciones de este plan
+          </p>
           {selected.actions.map((action, i) => {
             const conf = confidenceLabel(action.confidence);
             return (
@@ -168,7 +226,7 @@ export default function ActionPlanner() {
                   </div>
                   <div className="flex-shrink-0 text-right">
                     <p className="text-[16px] font-bold text-success">+{formatCurrency(action.impact, true)}</p>
-                    <p className="text-[10px] text-ink-400">{action.confidence}% confidence</p>
+                    <p className="text-[10px] text-ink-400">{action.confidence}% confianza</p>
                   </div>
                 </div>
               </div>
@@ -177,26 +235,60 @@ export default function ActionPlanner() {
         </div>
       </div>
 
-      {/* Why this plan? */}
-      <InsightCard title="Why this plan?" tone="neutral">
+      {/* ── Groq: Explicación en lenguaje sencillo ── */}
+      <div className="bg-white rounded-2xl border border-ink-300/60 shadow-card px-5 py-5">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-[13px] font-semibold text-ink-900">¿Qué tiene que hacer mi equipo?</p>
+            <p className="text-[12px] text-ink-500 mt-0.5">
+              Explicación en lenguaje sencillo generada por IA · {selected.name}
+            </p>
+          </div>
+          <button
+            onClick={handleExplain}
+            disabled={explanationLoading}
+            className="flex items-center gap-2 bg-ink-900 hover:bg-ink-700 disabled:opacity-50 text-white text-[12px] font-semibold px-4 py-2 rounded-xl transition-colors"
+          >
+            {explanationLoading ? (
+              <><Loader2 size={13} className="animate-spin" /> Generando…</>
+            ) : (
+              <><Sparkles size={13} /> Explicar para mi equipo</>
+            )}
+          </button>
+        </div>
+
+        {explanation ? (
+          <div className="bg-ink-100/50 rounded-xl px-4 py-4 border border-ink-200/60">
+            <p className="text-[13px] text-ink-800 leading-relaxed whitespace-pre-line">{explanation}</p>
+            {explanationModel && (
+              <p className="text-[10px] text-ink-400 mt-2">
+                {explanationModel} · {new Date().toLocaleTimeString('es-ES')}
+              </p>
+            )}
+          </div>
+        ) : !explanationLoading && (
+          <p className="text-[12px] text-ink-400 italic">
+            Pulsa el botón para que la IA explique en palabras simples qué debe hacer tu equipo esta semana para cumplir el objetivo.
+          </p>
+        )}
+      </div>
+
+      <InsightCard title="¿Por qué este plan?" tone="neutral">
         {selected.id === 'balanced' ? (
           <>
-            This plan prioritises <strong>Off-Trade because it explains the largest share of the gap</strong>.
-            It activates during <strong>Week 3, the strongest demand window</strong>, and pulls one planned
-            promotion into the current month to improve closing probability. The three actions are
-            coordinated to avoid execution conflicts and can be briefed to the field team within 48 hours.
+            Este plan prioriza <strong>Off-Trade porque es donde se origina la mayor parte de la desviación</strong>.
+            Se activa en <strong>Semana 3, la ventana de mayor demanda del mes</strong>, y adelanta
+            una promoción planificada para mejorar la probabilidad de cierre.
           </>
         ) : selected.id === 'conservative' ? (
           <>
-            This plan focuses on a <strong>single high-confidence lever</strong> — Estrella Damm push in
-            Off-Trade — to reduce the gap by approximately 50% with minimal execution complexity and low
-            budget risk. Best suited when the team has limited capacity.
+            Una única palanca de <strong>alta confianza</strong> — activación de Estrella Damm en Off-Trade —
+            para reducir la desviación en aproximadamente un 50% con mínima complejidad de ejecución.
           </>
         ) : (
           <>
-            This plan adds an <strong>Online flash activation for Estrella Daura</strong> to capture the
-            health-conscious segment alongside the core Off-Trade push. Higher potential upside but requires
-            cross-functional coordination across trade marketing and digital media within tight timelines.
+            Añade una <strong>activación digital flash de Estrella Daura</strong> para capturar el
+            segmento health-conscious. Mayor potencial de ganancia pero requiere coordinación entre equipos.
           </>
         )}
       </InsightCard>

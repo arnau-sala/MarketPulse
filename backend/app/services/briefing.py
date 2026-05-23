@@ -19,18 +19,19 @@ load_dotenv()
 
 _MODEL = "llama-3.3-70b-versatile"
 
-SYSTEM_PROMPT = """You are the Sales Director of Damm UK, the Spanish brewery's UK division.
-You write concise, actionable briefings for your commercial team based on data
-analysis from MarketPulse, an internal forecasting and recommendation tool.
+SYSTEM_PROMPT = """Eres el Director Comercial de Damm UK, la división británica de la cervecera española.
+Escribes resúmenes breves y accionables para tu equipo comercial basándote en datos
+del sistema MarketPulse, una herramienta interna de previsión y recomendaciones.
 
-Your briefings:
-- Are direct and pragmatic (4-6 sentences max)
-- Focus on what action to take and why
-- Use business language, never technical jargon (no MAPE, no XGBoost, no models)
-- Reference specific channels, brands, weeks and numbers from the context
-- End with a clear next step
+Tus resúmenes:
+- Son directos y prácticos (4-6 frases máximo)
+- Explican QUÉ hay que hacer y POR QUÉ, en lenguaje de negocio sencillo
+- No usan jerga técnica (nada de modelos, algoritmos, MAPE ni estadísticas)
+- Mencionan canales, marcas, semanas y cifras concretas del contexto
+- Terminan con UN paso de acción claro y concreto para el equipo
 
-Always write in English. Tone: confident, calm, executive."""
+Escribe siempre en español. Tono: directo, tranquilo, ejecutivo.
+El equipo que te lee no es técnico — usa frases cortas y claras."""
 
 
 def generate_briefing(context: dict) -> dict:
@@ -56,8 +57,8 @@ def generate_briefing(context: dict) -> dict:
     try:
         client = Groq(api_key=api_key)
         user_prompt = (
-            f"Generate a director's briefing for {context.get('month', 'this month')} "
-            f"with this context:\n\n{_format_context(context)}\n\nWrite the briefing now."
+            f"Genera el resumen del director para {context.get('month', 'este mes')} "
+            f"con este contexto:\n\n{_format_context(context)}\n\nEscribe el resumen ahora."
         )
 
         response = client.chat.completions.create(
@@ -78,6 +79,74 @@ def generate_briefing(context: dict) -> dict:
 
     except Exception as exc:
         raise RuntimeError(f"Groq call failed: {exc}") from exc
+
+
+EXPLAIN_PLAN_PROMPT = """Eres un asistente comercial de Damm UK que ayuda al equipo de ventas a entender qué deben hacer.
+
+Tu tarea es explicar un plan de acción comercial de forma muy sencilla, como si se lo explicaras a alguien que no sabe nada de análisis de datos ni forecasting.
+
+Reglas:
+- Usa frases cortas y directas
+- Nada de tecnicismos (no menciones modelos, algoritmos, porcentajes de confianza ni estadísticas)
+- Explica el QUÉ (qué tiene que hacer el equipo), el CUÁNDO (en qué semana) y el POR QUÉ (qué problema resuelve)
+- Si hay varias acciones, explícalas como pasos numerados (1, 2, 3...)
+- Termina con una frase motivadora y clara sobre el objetivo
+- Máximo 120 palabras en total
+- Escribe siempre en español"""
+
+
+def explain_action_plan(req) -> dict:
+    """
+    Genera una explicación en español sencillo del plan de acción seleccionado.
+    Pensado para usuarios no técnicos del equipo comercial.
+    """
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise RuntimeError("GROQ_API_KEY no está configurada en backend/.env")
+
+    actions_text = "\n".join(
+        f"  - {a['title']} (Semana: {a['week']}, Impacto estimado: £{a['impact']:,}): {a['why']}"
+        for a in req.actions
+    )
+    gap_text = ""
+    if req.gapContext:
+        gap_text = (
+            f"\nContexto de ventas:\n"
+            f"  - Ventas hasta hoy: £{req.gapContext.get('salesToDate', 0):,}\n"
+            f"  - Objetivo del mes: £{req.gapContext.get('monthlyTarget', 0):,}\n"
+            f"  - Diferencia actual: £{req.gapContext.get('expectedGap', 0):,}\n"
+        )
+
+    user_prompt = (
+        f"Explica este plan de acción comercial de forma sencilla para el equipo de ventas:\n\n"
+        f"Plan: {req.planName}\n"
+        f"Objetivo: {req.goal}\n"
+        f"Impacto esperado: +£{req.expectedImpact:,}\n"
+        f"Probabilidad de alcanzar el objetivo: {req.hitProbability}%\n"
+        f"Nivel de riesgo: {req.risk}\n"
+        f"{gap_text}\n"
+        f"Acciones del plan:\n{actions_text}\n\n"
+        f"Escribe la explicación ahora, en español sencillo, máximo 120 palabras."
+    )
+
+    try:
+        client = Groq(api_key=api_key)
+        response = client.chat.completions.create(
+            model=_MODEL,
+            messages=[
+                {"role": "system", "content": EXPLAIN_PLAN_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.3,
+            max_tokens=250,
+        )
+        return {
+            "text": response.choices[0].message.content.strip(),
+            "generatedAt": datetime.now(timezone.utc).isoformat(),
+            "model": _MODEL,
+        }
+    except Exception as exc:
+        raise RuntimeError(f"Error al llamar a Groq: {exc}") from exc
 
 
 def _format_context(ctx: dict) -> str:

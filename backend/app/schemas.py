@@ -108,6 +108,17 @@ class BriefingResponse(BaseModel):
     model: str
 
 
+class ExplainPlanRequest(BaseModel):
+    planId: str
+    planName: str
+    goal: str
+    expectedImpact: int
+    hitProbability: int
+    risk: str
+    actions: List[dict]  # [{title, week, impact, confidence, why}]
+    gapContext: Optional[dict] = None  # {salesToDate, monthlyTarget, expectedGap}
+
+
 class HealthResponse(BaseModel):
     status: str
     version: str

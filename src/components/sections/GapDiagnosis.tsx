@@ -1,4 +1,4 @@
-import { gapDrivers, channelPerformance, brandPerformance } from '../../data/mockData';
+import { useGapDrivers, useChannelPerformance, useBrandPerformance } from '../../hooks/useMarketPulse';
 import { formatCurrency } from '../../utils/formatters';
 import SectionHeader from '../common/SectionHeader';
 import InsightCard from '../common/InsightCard';
@@ -11,6 +11,7 @@ const dimensionTone: Record<string, string> = {
   Brand:     'bg-purple-50 text-purple-700 border-purple-200',
   Promotion: 'bg-amber-50  text-amber-700  border-amber-200',
   Timing:    'bg-slate-50  text-slate-600  border-slate-200',
+  Customer:  'bg-green-50  text-green-700  border-green-200',
 };
 
 function impactShare(share: number) {
@@ -20,6 +21,13 @@ function impactShare(share: number) {
 }
 
 export default function GapDiagnosis() {
+  const { data: drivers } = useGapDrivers();
+  const { data: channels } = useChannelPerformance();
+  const { data: brands } = useBrandPerformance();
+
+  const totalGap = drivers.reduce((s, d) => s + d.impact, 0);
+  const largest = drivers.reduce((a, b) => Math.abs(a.impact) > Math.abs(b.impact) ? a : b, drivers[0]);
+
   return (
     <div className="space-y-6">
       <SectionHeader
@@ -32,30 +40,30 @@ export default function GapDiagnosis() {
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-white border border-ink-300/60 rounded-2xl shadow-card px-5 py-4">
           <p className="text-[11px] font-semibold text-ink-500 uppercase tracking-wider mb-1">Total expected gap</p>
-          <p className="text-2xl font-bold text-danger">-£120k</p>
-          <p className="text-[11px] text-ink-500 mt-0.5">10% below March target</p>
+          <p className="text-2xl font-bold text-danger">{formatCurrency(totalGap, true)}</p>
+          <p className="text-[11px] text-ink-500 mt-0.5">{(Math.abs(totalGap / 1200000) * 100).toFixed(0)}% below target</p>
         </div>
         <div className="bg-white border border-ink-300/60 rounded-2xl shadow-card px-5 py-4">
           <p className="text-[11px] font-semibold text-ink-500 uppercase tracking-wider mb-1">Largest driver</p>
-          <p className="text-[16px] font-bold text-ink-900">Off-Trade</p>
-          <p className="text-[11px] text-ink-500 mt-0.5">43% of expected gap</p>
+          <p className="text-[16px] font-bold text-ink-900 truncate">{largest?.dimension ?? '—'}</p>
+          <p className="text-[11px] text-ink-500 mt-0.5">{largest?.share ?? 0}% of expected gap</p>
         </div>
         <div className="bg-white border border-ink-300/60 rounded-2xl shadow-card px-5 py-4">
           <p className="text-[11px] font-semibold text-ink-500 uppercase tracking-wider mb-1">Drivers identified</p>
-          <p className="text-2xl font-bold text-ink-900">{gapDrivers.length}</p>
-          <p className="text-[11px] text-ink-500 mt-0.5">Across channel, brand & promo</p>
+          <p className="text-2xl font-bold text-ink-900">{drivers.length}</p>
+          <p className="text-[11px] text-ink-500 mt-0.5">Across channel, brand &amp; promo</p>
         </div>
       </div>
 
       {/* Chart */}
       <div className="bg-white rounded-2xl border border-ink-300/60 shadow-card px-5 py-5">
         <p className="text-[13px] font-semibold text-ink-900 mb-4">Impact breakdown by driver</p>
-        <GapDriversChart />
+        <GapDriversChart data={drivers} />
       </div>
 
       {/* Driver cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {gapDrivers.map((driver, i) => (
+        {drivers.map((driver, i) => (
           <div key={i} className="bg-white border border-ink-300/60 rounded-2xl shadow-card px-5 py-4">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex-1 min-w-0">
@@ -63,25 +71,15 @@ export default function GapDiagnosis() {
                   <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${dimensionTone[driver.dimension] ?? 'bg-ink-100 text-ink-600 border-ink-200'}`}>
                     {driver.dimension}
                   </span>
-                  <StatusBadge
-                    status={`${driver.share}% of gap`}
-                    tone={impactShare(driver.share) as 'danger' | 'warning' | 'neutral'}
-                    size="sm"
-                  />
+                  <StatusBadge status={`${driver.share}% of gap`} tone={impactShare(driver.share) as 'danger' | 'warning' | 'neutral'} size="sm" />
                 </div>
                 <p className="text-[14px] font-semibold text-ink-900">{driver.name}</p>
               </div>
-              <p className="text-[18px] font-bold text-danger flex-shrink-0">
-                {formatCurrency(driver.impact, true)}
-              </p>
+              <p className="text-[18px] font-bold text-danger flex-shrink-0">{formatCurrency(driver.impact, true)}</p>
             </div>
             <p className="text-[12px] text-ink-500 leading-relaxed">{driver.explanation}</p>
-            {/* mini bar */}
             <div className="mt-3 w-full h-1 bg-ink-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-danger rounded-full transition-all duration-700"
-                style={{ width: `${driver.share}%` }}
-              />
+              <div className="h-full bg-danger rounded-full transition-all duration-700" style={{ width: `${driver.share}%` }} />
             </div>
           </div>
         ))}
@@ -91,25 +89,23 @@ export default function GapDiagnosis() {
       <div className="bg-white rounded-2xl border border-ink-300/60 shadow-card px-5 py-5">
         <p className="text-[13px] font-semibold text-ink-900 mb-1">Channel performance vs target</p>
         <p className="text-[12px] text-ink-500 mb-4">Sales to date by channel against the month-to-date target pace.</p>
-        <ChannelMixChart />
+        <ChannelMixChart data={channels} />
         <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-ink-100">
-          {channelPerformance.map((c) => (
+          {channels.map(c => (
             <div key={c.channel} className="text-center">
               <p className="text-[11px] text-ink-500 mb-0.5">{c.channel}</p>
-              <p className={`text-[15px] font-bold ${c.gap < 0 ? 'text-danger' : 'text-success'}`}>
-                {formatCurrency(c.gap, true)}
-              </p>
+              <p className={`text-[15px] font-bold ${c.gap < 0 ? 'text-danger' : 'text-success'}`}>{formatCurrency(c.gap, true)}</p>
               <p className="text-[10px] text-ink-400">vs target</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Brand performance table */}
+      {/* Brand performance */}
       <div className="bg-white rounded-2xl border border-ink-300/60 shadow-card px-5 py-5">
         <p className="text-[13px] font-semibold text-ink-900 mb-4">Brand performance vs target</p>
         <div className="space-y-3">
-          {brandPerformance.filter(b => b.brand !== 'Others').map((b) => (
+          {brands.filter(b => b.brand !== 'Others').map(b => (
             <div key={b.brand} className="flex items-center gap-4">
               <div className="w-36 flex-shrink-0">
                 <p className="text-[12px] font-medium text-ink-900 truncate">{b.brand}</p>
@@ -135,10 +131,9 @@ export default function GapDiagnosis() {
         </div>
       </div>
 
-      {/* Key takeaway */}
       <InsightCard title="Key takeaway" tone="danger">
         The gap is not evenly distributed: <strong>Off-Trade and Voll-Damm</strong> explain 69% of
-        the expected underperformance. The recovery plan should therefore prioritise those areas first,
+        the expected underperformance. The recovery plan should prioritise those areas first,
         focusing on Off-Trade channels during Week 3 when the promotional opportunity score peaks.
       </InsightCard>
     </div>
