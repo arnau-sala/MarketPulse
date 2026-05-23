@@ -199,7 +199,7 @@ export default function WhatIfSimulator() {
                 </p>
               </div>
               <div className="w-24">
-                <ProgressBar value={result.hitProbability} max={100} tone={probTone === 'neutral' ? 'warning' : probTone as 'success' | 'warning' | 'danger'} />
+                <ProgressBar value={result.hitProbability} max={100} tone={probTone} />
               </div>
             </div>
           </div>
