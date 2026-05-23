@@ -1,4 +1,4 @@
-import { BarChart3, TrendingUp, Calendar, Zap, FlaskConical, ChevronRight, X } from 'lucide-react';
+import { BarChart3, TrendingUp, Calendar, Zap, FlaskConical, ChevronRight, X, Target, History } from 'lucide-react';
 import type { SectionId, NavItem } from '../../constants/navigation';
 
 const iconMap: Record<SectionId, React.ReactNode> = {
@@ -6,6 +6,8 @@ const iconMap: Record<SectionId, React.ReactNode> = {
   gap: <TrendingUp size={16} />,
   demand: <Calendar size={16} />,
   action: <Zap size={16} />,
+  targets: <Target size={16} />,
+  historical: <History size={16} />,
   simulator: <FlaskConical size={16} />,
 };
 

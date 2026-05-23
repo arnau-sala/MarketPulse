@@ -1,4 +1,8 @@
 import { createContext, useContext, useMemo, useState } from 'react';
+import {
+  computeDefaultMonthlyTarget,
+  getMonthlyNetProfitAverage,
+} from '../data/profitHistory';
 
 export type TargetMonthKey =
   | 'jan'
@@ -18,7 +22,10 @@ export interface TargetMonth {
   key: TargetMonthKey;
   label: string;
   quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4';
-  lastYearSales: number;
+  /** Mean net profit for this month over the last 3 baseline years. */
+  baselineAverage: number;
+  /** Default target derived from baselineAverage (+10%). */
+  defaultTarget: number;
   target: number;
 }
 
@@ -36,26 +43,40 @@ interface TargetContextValue {
 
 const currentMonthKey: TargetMonthKey = 'mar';
 
-const monthBlueprints: Array<Pick<TargetMonth, 'key' | 'label' | 'quarter' | 'lastYearSales'>> = [
-  { key: 'jan', label: 'Jan', quarter: 'Q1', lastYearSales: 1080000 },
-  { key: 'feb', label: 'Feb', quarter: 'Q1', lastYearSales: 1120000 },
-  { key: 'mar', label: 'Mar', quarter: 'Q1', lastYearSales: 1091000 },
-  { key: 'apr', label: 'Apr', quarter: 'Q2', lastYearSales: 1050000 },
-  { key: 'may', label: 'May', quarter: 'Q2', lastYearSales: 1070000 },
-  { key: 'jun', label: 'Jun', quarter: 'Q2', lastYearSales: 1090000 },
-  { key: 'jul', label: 'Jul', quarter: 'Q3', lastYearSales: 1120000 },
-  { key: 'aug', label: 'Aug', quarter: 'Q3', lastYearSales: 1040000 },
-  { key: 'sep', label: 'Sep', quarter: 'Q3', lastYearSales: 1030000 },
-  { key: 'oct', label: 'Oct', quarter: 'Q4', lastYearSales: 1100000 },
-  { key: 'nov', label: 'Nov', quarter: 'Q4', lastYearSales: 1150000 },
-  { key: 'dec', label: 'Dec', quarter: 'Q4', lastYearSales: 1210000 },
+const monthDefinitions: Array<{
+  key: TargetMonthKey;
+  label: string;
+  quarter: TargetMonth['quarter'];
+  monthNumber: number;
+}> = [
+  { key: 'jan', label: 'Jan', quarter: 'Q1', monthNumber: 1 },
+  { key: 'feb', label: 'Feb', quarter: 'Q1', monthNumber: 2 },
+  { key: 'mar', label: 'Mar', quarter: 'Q1', monthNumber: 3 },
+  { key: 'apr', label: 'Apr', quarter: 'Q2', monthNumber: 4 },
+  { key: 'may', label: 'May', quarter: 'Q2', monthNumber: 5 },
+  { key: 'jun', label: 'Jun', quarter: 'Q2', monthNumber: 6 },
+  { key: 'jul', label: 'Jul', quarter: 'Q3', monthNumber: 7 },
+  { key: 'aug', label: 'Aug', quarter: 'Q3', monthNumber: 8 },
+  { key: 'sep', label: 'Sep', quarter: 'Q3', monthNumber: 9 },
+  { key: 'oct', label: 'Oct', quarter: 'Q4', monthNumber: 10 },
+  { key: 'nov', label: 'Nov', quarter: 'Q4', monthNumber: 11 },
+  { key: 'dec', label: 'Dec', quarter: 'Q4', monthNumber: 12 },
 ];
 
 function buildInitialMonths(): TargetMonth[] {
-  return monthBlueprints.map((month) => ({
-    ...month,
-    target: Math.round((month.lastYearSales * 1.1) / 1000) * 1000,
-  }));
+  return monthDefinitions.map((month) => {
+    const baselineAverage = getMonthlyNetProfitAverage(month.monthNumber);
+    const defaultTarget = computeDefaultMonthlyTarget(baselineAverage);
+
+    return {
+      key: month.key,
+      label: month.label,
+      quarter: month.quarter,
+      baselineAverage,
+      defaultTarget,
+      target: defaultTarget,
+    };
+  });
 }
 
 const TargetContext = createContext<TargetContextValue | null>(null);
@@ -87,7 +108,7 @@ export function TargetProvider({ children }: { children: React.ReactNode }) {
             month.key === monthKey
               ? {
                   ...month,
-                  target: Math.max(month.lastYearSales, Math.round(target)),
+                  target: Math.max(0, Math.round(target)),
                 }
               : month,
           ),

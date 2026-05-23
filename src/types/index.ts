@@ -42,6 +42,10 @@ export interface SalesMomentumPeriod {
   points: SalesMomentumPoint[];
 }
 
+export type SalesMomentumPeriodKey = 'week' | 'month' | 'quarter' | 'year';
+
+export type SalesMomentumData = Record<SalesMomentumPeriodKey, SalesMomentumPeriod>;
+
 export interface GapDriver {
   name: string;
   impact: number;
@@ -146,6 +150,7 @@ export interface SectionHeaderProps {
   eyebrow?: string;
   title: string;
   description?: string;
+  descriptionClassName?: string;
 }
 
 export interface ProgressBarProps {

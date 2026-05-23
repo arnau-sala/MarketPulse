@@ -23,7 +23,6 @@ export default function GapDiagnosis() {
   return (
     <div className="space-y-6">
       <SectionHeader
-        eyebrow="02 — Gap Diagnosis"
         title="What is driving the gap?"
         description="MarketPulse decomposes the expected gap into business drivers so the team knows where to act first."
       />

@@ -9,20 +9,21 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from 'recharts';
-import { salesMomentumData } from '../../data/mockData';
 import { formatCurrency, formatDelta, formatPercent } from '../../utils/formatters';
 import { useTargetPlan } from '../../context/TargetContext';
+import { useSalesMomentumData } from '../../hooks/useSalesMomentumData';
+import type { SalesMomentumPeriod } from '../../types';
 
 const periodOptions = [
-  { value: '7d', label: 'Last 7 days' },
-  { value: 'mtd', label: 'Month to date' },
-  { value: 'fullMonth', label: 'Full month' },
-  { value: 'quarter', label: 'Quarter view' },
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' },
+  { value: 'quarter', label: 'Quarter' },
+  { value: 'year', label: 'Year' },
 ] as const;
 
 type PeriodKey = (typeof periodOptions)[number]['value'];
 
-type MomentumPeriod = (typeof salesMomentumData)[PeriodKey];
+type MomentumPeriod = SalesMomentumPeriod;
 type MomentumPoint = MomentumPeriod['points'][number];
 
 type HoverMode = 'none' | 'actual' | 'future';
@@ -41,6 +42,24 @@ const chartLegendItems = [
 
 function formatAxis(value: number) {
   return formatCurrency(value, true);
+}
+
+function renderTargetReferenceLabel(targetValue: number) {
+  return (props: { viewBox?: { x?: number; y?: number; width?: number } }) => {
+    const { viewBox } = props;
+    if (viewBox?.x == null || viewBox?.y == null || viewBox?.width == null) {
+      return <g />;
+    }
+
+    const x = viewBox.x + 6;
+    const y = Math.max(14, viewBox.y - 10);
+
+    return (
+      <text x={x} y={y} textAnchor="start" fill="#DC2626" fontSize={11} fontWeight={600}>
+        {formatCurrency(targetValue, true)}
+      </text>
+    );
+  };
 }
 
 function HoverInfoPanel({
@@ -165,12 +184,12 @@ function getForecastGapPoint(point: MomentumPoint) {
   return Math.max(point.recommendedForecast - point.noActionForecast, 0);
 }
 
-function getYAxisDomain(periodData: MomentumPeriod): [number, number] {
+function getYAxisDomain(periodData: MomentumPeriod, lineTarget: number): [number, number] {
   const values = periodData.points.flatMap((point) => [
     point.actualSales,
     point.noActionForecast,
     point.recommendedForecast,
-    point.target,
+    lineTarget,
   ]).filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
 
   const min = Math.min(...values);
@@ -182,12 +201,23 @@ function getYAxisDomain(periodData: MomentumPeriod): [number, number] {
   return [lower, upper];
 }
 
+const CHART_ANIMATION_MS = 1400;
+
 export default function SalesMomentumChart() {
-  const { currentMonthTarget, currentQuarterTarget, weeklyTarget } = useTargetPlan();
-  const [period, setPeriod] = useState<PeriodKey>('fullMonth');
+  const { data: salesMomentumData } = useSalesMomentumData();
+  const { currentMonthTarget, currentQuarterTarget, weeklyTarget, annualTarget } = useTargetPlan();
+  const [period, setPeriod] = useState<PeriodKey>('week');
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [chartAnimationActive, setChartAnimationActive] = useState(true);
   const selectedPeriodData = salesMomentumData[period];
-  const periodTarget = period === '7d' ? weeklyTarget : period === 'quarter' ? currentQuarterTarget : currentMonthTarget;
+  const periodTarget =
+    period === 'week'
+      ? weeklyTarget
+      : period === 'month'
+        ? currentMonthTarget
+        : period === 'quarter'
+          ? currentQuarterTarget
+          : annualTarget;
   const data = selectedPeriodData.points.map((point) => ({
     ...point,
     target: periodTarget,
@@ -197,7 +227,7 @@ export default function SalesMomentumChart() {
   const todayPoint = getTodayPoint(selectedPeriodData);
   const finalPoint = getClosePoint(selectedPeriodData);
   const target = periodTarget;
-  const yDomain = getYAxisDomain(selectedPeriodData);
+  const yDomain = getYAxisDomain(selectedPeriodData, periodTarget);
   // Create evenly spaced ticks for the Y axis so labels remain uniformly distributed
   const yTicks = (() => {
     const [low, up] = yDomain;
@@ -214,9 +244,24 @@ export default function SalesMomentumChart() {
   const recommendedGap = recommendedClose - target;
   const uplift = recommendedClose - noActionClose;
 
-  useEffect(() => {
+  const handlePeriodChange = (nextPeriod: PeriodKey) => {
+    if (nextPeriod === period) {
+      return;
+    }
+
     setHoveredIndex(null);
-  }, [period]);
+    setChartAnimationActive(true);
+    setPeriod(nextPeriod);
+  };
+
+  useEffect(() => {
+    if (!chartAnimationActive) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setChartAnimationActive(false), CHART_ANIMATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [period, chartAnimationActive]);
 
   const hoveredPoint = hoveredIndex != null ? data[hoveredIndex] ?? null : null;
   let hoverMode: HoverMode = 'none';
@@ -278,7 +323,7 @@ export default function SalesMomentumChart() {
                 key={option.value}
                 type="button"
                 aria-pressed={isActive}
-                onClick={() => setPeriod(option.value)}
+                onClick={() => handlePeriodChange(option.value)}
                 className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-all duration-150 ${
                   isActive
                     ? 'border-ink-900 bg-ink-900 text-white shadow-sm'
@@ -348,7 +393,11 @@ export default function SalesMomentumChart() {
             </div>
             <div className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={data} margin={{ top: 6, right: 18, left: 0, bottom: 0 }}>
+                <ComposedChart
+                  key={period}
+                  data={data}
+                  margin={{ top: 14, right: 12, left: 0, bottom: 0 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
                   {/* Target reference line: drawn early so it stays behind areas/lines */}
                   <ReferenceLine
@@ -356,7 +405,7 @@ export default function SalesMomentumChart() {
                     stroke="#DC2626"
                     strokeWidth={1}
                     strokeOpacity={0.9}
-                    label={{ position: 'left', value: formatCurrency(target, true), fill: '#DC2626', fontSize: 11 }}
+                    label={renderTargetReferenceLabel(target)}
                   />
                   <XAxis
                     dataKey="period"
@@ -389,6 +438,8 @@ export default function SalesMomentumChart() {
                     dataKey="noActionForecast"
                     name="No-action forecast"
                     stackId="fork"
+                    isAnimationActive={chartAnimationActive}
+                    animationDuration={CHART_ANIMATION_MS}
                     stroke="#F59E0B"
                     strokeWidth={2.25}
                     strokeDasharray="6 4"
@@ -406,6 +457,8 @@ export default function SalesMomentumChart() {
                     dataKey="forecastGap"
                     name="Forecast uplift"
                     stackId="fork"
+                    isAnimationActive={chartAnimationActive}
+                    animationDuration={CHART_ANIMATION_MS}
                     stroke="none"
                     fill="#16A34A"
                     fillOpacity={0.16}
@@ -424,6 +477,8 @@ export default function SalesMomentumChart() {
                       type="monotone"
                       dataKey={line.key}
                       name={line.label}
+                      isAnimationActive={chartAnimationActive}
+                      animationDuration={CHART_ANIMATION_MS}
                       stroke={line.color}
                       strokeWidth={line.strokeWidth}
                       dot={(props: any) => (

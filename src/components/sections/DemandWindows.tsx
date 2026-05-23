@@ -36,7 +36,6 @@ export default function DemandWindows() {
   return (
     <div className="space-y-6">
       <SectionHeader
-        eyebrow="03 — Demand Windows"
         title="When should we act?"
         description="The best week is not always the week with the highest demand. MarketPulse identifies where commercial action can create the highest incremental impact."
       />

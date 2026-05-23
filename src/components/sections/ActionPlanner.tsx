@@ -34,7 +34,6 @@ export default function ActionPlanner() {
   return (
     <div className="space-y-6">
       <SectionHeader
-        eyebrow="04 — Action Planner"
         title="What should we do now?"
         description="Recommended commercial recovery plans ranked by impact, confidence and execution risk."
       />

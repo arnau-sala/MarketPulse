@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -11,10 +11,13 @@ import {
 } from 'recharts';
 import SectionHeader from '../common/SectionHeader';
 import MetricCard from '../common/MetricCard';
-import InsightCard from '../common/InsightCard';
 import { formatCurrency, formatPercent } from '../../utils/formatters';
-import { useTargetPlan, type TargetMonth } from '../../context/TargetContext';
+import { TARGET_BASELINE_YEAR } from '../../data/profitHistory';
+import { useOpenBaselineHistorical } from '../../context/AppUIContext';
+import { useTargetPlan, type TargetMonth, type TargetMonthKey } from '../../context/TargetContext';
 import { netProfitHistory } from '../../data/profitHistory';
+
+const BASELINE_AVERAGE_LABEL = '3-yr avg';
 
 function groupByQuarter(months: TargetMonth[]) {
   return ['Q1', 'Q2', 'Q3', 'Q4'].map((quarter) => ({
@@ -23,29 +26,124 @@ function groupByQuarter(months: TargetMonth[]) {
   }));
 }
 
-function getDefaultTarget(lastYearSales: number) {
-  return Math.round(lastYearSales * 1.1 / 1000) * 1000;
+const TARGET_STEP = 100_000;
+
+function parseTargetDraft(draft: string, fallback: number) {
+  const trimmed = draft.trim();
+  if (trimmed === '') {
+    return fallback;
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return Math.max(0, Math.round(parsed));
 }
 
-function TargetTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: { label: string; lastYearSales: number; uplift: number; target: number } }> }) {
+function EditableTargetInput({
+  monthKey,
+  value,
+  onCommit,
+}: {
+  monthKey: TargetMonthKey;
+  value: number;
+  onCommit: (monthKey: TargetMonthKey, target: number) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const displayValue = draft ?? String(value);
+
+  useEffect(() => {
+    setDraft(null);
+  }, [value]);
+
+  const commitDraft = (raw: string) => {
+    onCommit(monthKey, parseTargetDraft(raw, value));
+    setDraft(null);
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      autoComplete="off"
+      value={displayValue}
+      onChange={(event) => {
+        const next = event.target.value.replace(/[^\d]/g, '');
+        setDraft(next);
+      }}
+      onFocus={(event) => {
+        setDraft(event.target.value.replace(/[^\d]/g, ''));
+        event.target.select();
+      }}
+      onBlur={(event) => commitDraft(event.target.value)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') {
+          event.currentTarget.blur();
+          return;
+        }
+
+        if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+          event.preventDefault();
+          const current = parseTargetDraft(draft ?? String(value), value);
+          const next =
+            event.key === 'ArrowUp'
+              ? current + TARGET_STEP
+              : Math.max(0, current - TARGET_STEP);
+          onCommit(monthKey, next);
+          setDraft(String(next));
+        }
+      }}
+      className="w-full rounded-lg border border-ink-300 bg-white py-2 pl-7 pr-3 text-[13px] font-medium text-ink-900 outline-none transition-colors focus:border-brand-red"
+      aria-label="Editable monthly target"
+    />
+  );
+}
+
+const CHART_LAST_YEAR_FILL = '#EDE8DF';
+const CHART_LAST_YEAR_STROKE = '#C9BFB0';
+const CHART_UPLIFT_FILL = '#15803D';
+const CHART_UPLIFT_STROKE = '#166534';
+
+function TargetTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: { label: string; baselineAverage: number; uplift: number; target: number } }> }) {
   if (!active || !payload?.length) {
     return null;
   }
 
   const item = payload[0].payload;
+  const gap = item.target - item.baselineAverage;
+  const gapPct = item.baselineAverage > 0 ? (gap / item.baselineAverage) * 100 : 0;
 
   return (
-    <div className="rounded-xl border border-ink-200 bg-white px-3 py-2 shadow-card">
+    <div className="rounded-xl border border-ink-300 bg-white px-3 py-2.5 shadow-card">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-500">{item.label}</p>
-      <p className="mt-1 text-[12px] text-ink-700">Last year: {formatCurrency(item.lastYearSales, true)}</p>
-      <p className="text-[12px] text-success">Uplift: {formatCurrency(item.uplift, true)}</p>
-      <p className="text-[12px] font-semibold text-ink-900">Target: {formatCurrency(item.target, true)}</p>
+      <div className="mt-2 space-y-1.5">
+        <div className="flex items-center gap-2 text-[12px]">
+          <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-[#C9BFB0]" style={{ background: CHART_LAST_YEAR_FILL }} />
+          <span className="text-ink-500">{BASELINE_AVERAGE_LABEL}</span>
+          <span className="ml-auto font-semibold text-ink-900">{formatCurrency(item.baselineAverage, true)}</span>
+        </div>
+        <div className="flex items-center gap-2 text-[12px]">
+          <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: gap >= 0 ? CHART_UPLIFT_FILL : '#D97706' }} />
+          <span className="text-ink-500">vs baseline ({formatPercent(Math.abs(gapPct), 0)})</span>
+          <span className={`ml-auto font-semibold ${gap >= 0 ? 'text-success' : 'text-warning'}`}>
+            {gap >= 0 ? '+' : '−'}
+            {formatCurrency(Math.abs(gap), true)}
+          </span>
+        </div>
+        <div className="border-t border-ink-100 pt-1.5 flex items-center justify-between text-[12px]">
+          <span className="font-medium text-ink-600">Monthly target</span>
+          <span className="font-bold text-ink-900">{formatCurrency(item.target, true)}</span>
+        </div>
+      </div>
     </div>
   );
 }
 
 export default function TargetPlanning() {
   const { months, annualTarget, currentMonth, currentMonthTarget, currentQuarter, currentQuarterTarget, weeklyTarget, updateTarget } = useTargetPlan();
+  const openBaselineHistorical = useOpenBaselineHistorical();
   const [selectedHistoryYear, setSelectedHistoryYear] = useState(2025);
   const [selectedQuarter, setSelectedQuarter] = useState(currentQuarter);
 
@@ -53,7 +151,8 @@ export default function TargetPlanning() {
     () =>
       months.map((month) => ({
         ...month,
-        uplift: Math.max(month.target - month.lastYearSales, 0),
+        chartBase: Math.min(month.target, month.baselineAverage),
+        uplift: Math.max(month.target - month.baselineAverage, 0),
         total: month.target,
       })),
     [months],
@@ -71,7 +170,7 @@ export default function TargetPlanning() {
   );
 
   const selectedQuarterBase = useMemo(
-    () => selectedQuarterGroup.months.reduce((sum, month) => sum + month.lastYearSales, 0),
+    () => selectedQuarterGroup.months.reduce((sum, month) => sum + month.baselineAverage, 0),
     [selectedQuarterGroup],
   );
 
@@ -89,10 +188,67 @@ export default function TargetPlanning() {
   return (
     <div className="space-y-6">
       <SectionHeader
-        eyebrow="06 — Target Planning"
         title="Editable monthly targets"
-        description="Each month starts at last year +10%. Changing a month updates the quarter, annual total and the charts live. Weekly target is always one quarter of the month target."
+        description="Each month starts at the 3-year average net profit +10%. Changing a month updates the quarter, annual total and the charts live."
+        descriptionClassName="max-w-none"
       />
+
+      <div className="rounded-2xl border border-ink-300 bg-white p-4 shadow-card">
+          <div className="flex flex-col gap-2 border-b border-ink-100 pb-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[12px] font-semibold uppercase tracking-wider text-ink-500">Monthly gain chart</p>
+              <p className="mt-0.5 text-[13px] text-ink-500">
+                Each bar stacks the 3-year monthly average (beige) and the uplift to reach the target (green).
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-3 w-3 rounded-sm border"
+                    style={{ background: CHART_LAST_YEAR_FILL, borderColor: CHART_LAST_YEAR_STROKE }}
+                  />
+                  <span className="text-[11px] font-medium text-ink-600">{BASELINE_AVERAGE_LABEL}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-sm" style={{ background: CHART_UPLIFT_FILL }} />
+                  <span className="text-[11px] font-medium text-ink-600">Uplift to target</span>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-full border border-ink-200 bg-cream-50 px-3 py-1 text-[11px] font-semibold text-ink-600">
+              Beige + green = target
+            </div>
+          </div>
+
+          <div className="mt-3 h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }} barCategoryGap="28%">
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#6B7280' }} tickLine={false} axisLine={{ stroke: '#E5E7EB' }} />
+                <YAxis tickFormatter={(value) => formatCurrency(value as number, true)} tick={{ fontSize: 11, fill: '#6B7280' }} tickLine={false} axisLine={false} width={58} />
+                <Tooltip content={<TargetTooltip />} cursor={false} />
+                <Bar
+                  dataKey="chartBase"
+                  stackId="target"
+                  name={`${BASELINE_AVERAGE_LABEL} net profit`}
+                  fill={CHART_LAST_YEAR_FILL}
+                  stroke={CHART_LAST_YEAR_STROKE}
+                  strokeWidth={1}
+                  radius={[0, 0, 0, 0]}
+                />
+                <Bar
+                  dataKey="uplift"
+                  stackId="target"
+                  name="Uplift to target"
+                  fill={CHART_UPLIFT_FILL}
+                  stroke={CHART_UPLIFT_STROKE}
+                  strokeWidth={1}
+                  radius={[6, 6, 0, 0]}
+                  activeBar={{ fill: '#16A34A', stroke: CHART_UPLIFT_STROKE, strokeWidth: 1 }}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+      </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard title="Annual target" value={formatCurrency(annualTarget, true)} subtitle="Sum of all months" tone="neutral" />
@@ -101,53 +257,8 @@ export default function TargetPlanning() {
         <MetricCard title="Weekly target" value={formatCurrency(weeklyTarget, true)} subtitle={`${currentMonth.label} / 4`} tone="neutral" />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <div className="rounded-2xl border border-ink-200 bg-white p-5 shadow-card">
-          <div className="flex flex-col gap-2 border-b border-ink-100 pb-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-[12px] font-semibold uppercase tracking-wider text-ink-500">Monthly gain chart</p>
-              <p className="mt-1 text-[13px] text-ink-500">The beige bar is last year; the colored top is the 10% uplift that makes the target.</p>
-            </div>
-            <div className="rounded-full border border-ink-200 bg-cream-50 px-3 py-1 text-[11px] font-semibold text-ink-600">
-              Base + uplift = total target
-            </div>
-          </div>
-
-          <div className="mt-4 h-[360px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 18, right: 18, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#6B7280' }} tickLine={false} axisLine={{ stroke: '#E5E7EB' }} />
-                <YAxis tickFormatter={(value) => formatCurrency(value as number, true)} tick={{ fontSize: 11, fill: '#6B7280' }} tickLine={false} axisLine={false} width={58} />
-                <Tooltip content={<TargetTooltip />} />
-                <Bar dataKey="lastYearSales" stackId="target" name="Last year" fill="#E5E7EB" stroke="#CBD5E1" strokeWidth={1} radius={[8, 8, 0, 0]} />
-                <Bar dataKey="uplift" stackId="target" name="10% uplift" fill="#F59E0B" stroke="#D97706" strokeWidth={1} radius={[8, 8, 0, 0]}>
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-ink-200 bg-white p-5 shadow-card">
-            <p className="text-[12px] font-semibold uppercase tracking-wider text-ink-500">Formula</p>
-            <p className="mt-2 text-[13px] leading-6 text-ink-600">
-              Every month starts from last year&apos;s sales and adds a 10% uplift. When you edit a month, the quarter total is recalculated from the edited months and the chart in Executive Pulse updates immediately.
-            </p>
-          </div>
-
-          <InsightCard title="Planning rules" tone="neutral">
-            <ul className="space-y-2 text-[13px] leading-5 text-ink-600">
-              <li>• Weekly target = monthly target / 4.</li>
-              <li>• Quarter target = sum of the months in that quarter.</li>
-              <li>• Annual target = sum of all monthly targets.</li>
-            </ul>
-          </InsightCard>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(180px,220px)_minmax(0,1fr)] xl:items-stretch">
-        <div className="flex h-full flex-col rounded-2xl border border-ink-200 bg-cream-50/60 p-3 shadow-card">
+        <div className="flex h-full flex-col rounded-2xl border border-ink-300 bg-cream-50/60 p-3 shadow-card">
           <p className="px-1 pb-2 text-[11px] font-semibold uppercase tracking-wider text-ink-500">Quarters</p>
           <div className="flex min-h-0 flex-1 flex-col gap-2">
             {quarterGroups.map((group) => {
@@ -159,11 +270,11 @@ export default function TargetPlanning() {
                 <button
                   key={group.quarter}
                   type="button"
-                  onClick={() => setSelectedQuarter(group.quarter)}
-                  className={`flex min-h-[76px] w-full flex-1 flex-col justify-between rounded-xl border px-3 py-3 text-left transition-all duration-150 ${
+                  onClick={() => setSelectedQuarter(group.quarter as typeof selectedQuarter)}
+                  className={`flex min-h-[76px] w-full flex-1 flex-col justify-between rounded-xl border bg-white px-3 py-3 text-left transition-all duration-150 ${
                     isActive
-                      ? 'border-brand-red/15 bg-white text-ink-900 shadow-[0_1px_0_rgba(15,23,42,0.03)]'
-                      : 'border-transparent bg-transparent text-ink-600 hover:border-ink-200 hover:bg-white hover:text-ink-900'
+                      ? 'border-brand-red text-ink-900'
+                      : 'border-ink-300 text-ink-600 hover:border-ink-400 hover:text-ink-900'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -181,7 +292,7 @@ export default function TargetPlanning() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-ink-200 bg-white p-5 shadow-card">
+        <div className="rounded-2xl border border-ink-300 bg-white p-5 shadow-card">
           <div className="flex flex-col gap-4 border-b border-ink-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <p className="text-[12px] font-semibold uppercase tracking-wider text-ink-500">{selectedQuarterGroup.quarter}</p>
@@ -205,30 +316,41 @@ export default function TargetPlanning() {
 
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {selectedQuarterGroup.months.map((month) => {
-              const uplift = Math.max(month.target - month.lastYearSales, 0);
-              const upliftPct = month.lastYearSales > 0 ? (uplift / month.lastYearSales) * 100 : 0;
+              const uplift = month.target - month.baselineAverage;
+              const upliftPct = month.baselineAverage > 0 ? (uplift / month.baselineAverage) * 100 : 0;
               const weekly = Math.round(month.target / 4 / 1000) * 1000;
-              const defaultTarget = getDefaultTarget(month.lastYearSales);
-              const isDefaultTarget = month.target === defaultTarget;
+              const isDefaultTarget = month.target === month.defaultTarget;
 
               return (
-                <div key={month.key} className="rounded-xl border border-ink-200 bg-cream-50/70 px-4 py-4">
+                <div key={month.key} className="rounded-xl border border-ink-300 bg-cream-50/70 px-4 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-[12px] font-semibold uppercase tracking-wider text-ink-500">{month.label}</p>
                       <p className="mt-1 text-[18px] font-bold text-ink-900">{formatCurrency(month.target, true)}</p>
                     </div>
-                    <span className="rounded-full border border-ink-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-ink-500">
-                      {formatPercent(upliftPct, 0)} uplift
+                    <span
+                      className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                        uplift >= 0
+                          ? 'border-ink-200 bg-white text-ink-500'
+                          : 'border-warning/30 bg-warning-light text-warning'
+                      }`}
+                    >
+                      {uplift >= 0 ? '' : '−'}
+                      {formatPercent(Math.abs(upliftPct), 0)} vs baseline
                     </span>
                   </div>
 
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-ink-500">
-                    <div className="rounded-lg border border-ink-200 bg-white px-3 py-2">
-                      <p className="uppercase tracking-wider">Last year</p>
-                      <p className="mt-1 text-[12px] font-semibold text-ink-900">{formatCurrency(month.lastYearSales, true)}</p>
-                    </div>
-                    <div className="rounded-lg border border-ink-200 bg-white px-3 py-2">
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-ink-500 items-stretch">
+                    <button
+                      type="button"
+                      onClick={openBaselineHistorical}
+                      className="flex h-full flex-col items-center justify-center rounded-lg border border-ink-300 bg-white px-3 py-2 text-center transition-colors hover:border-brand-red hover:bg-cream-50/80"
+                      aria-label={`View ${TARGET_BASELINE_YEAR} in Historical Data`}
+                    >
+                      <p className="uppercase tracking-wider">{BASELINE_AVERAGE_LABEL}</p>
+                      <p className="mt-1 text-[12px] font-semibold text-ink-900">{formatCurrency(month.baselineAverage, true)}</p>
+                    </button>
+                    <div className="flex h-full flex-col items-center justify-center rounded-lg border border-ink-300 bg-white px-3 py-2 text-center">
                       <p className="uppercase tracking-wider">Weekly</p>
                       <p className="mt-1 text-[12px] font-semibold text-ink-900">{formatCurrency(weekly, true)}</p>
                     </div>
@@ -239,22 +361,19 @@ export default function TargetPlanning() {
                     <div className="mt-1 flex items-center gap-1.5">
                       <div className="relative min-w-0 flex-1 max-w-[180px]">
                         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-medium text-ink-500">£</span>
-                        <input
-                          type="number"
-                          min={month.lastYearSales}
-                          step={1000}
+                        <EditableTargetInput
+                          monthKey={month.key}
                           value={month.target}
-                          onChange={(event) => updateTarget(month.key, Number(event.target.value))}
-                          className="w-full rounded-lg border border-ink-200 bg-white py-2 pl-7 pr-3 text-[13px] font-medium text-ink-900 outline-none transition-colors focus:border-brand-red"
+                          onCommit={updateTarget}
                         />
                       </div>
                       <button
                         type="button"
-                        onClick={() => updateTarget(month.key, defaultTarget)}
+                        onClick={() => updateTarget(month.key, month.defaultTarget)}
                         disabled={isDefaultTarget}
                         aria-label="Reset target to default value"
                         title="Reset target to default value"
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-ink-200 bg-white text-ink-600 transition-colors hover:border-brand-red hover:text-ink-900 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-ink-300 bg-white text-ink-600 transition-colors hover:border-brand-red hover:text-ink-900 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <RotateCcw className="h-4 w-4" />
                       </button>

@@ -15,12 +15,10 @@ export default function ExecutivePulse() {
   const progress = progressValue(m.salesToDate, currentMonthTarget);
   const expectedGap = m.baselineForecast - currentMonthTarget;
   const balancedRecoveryForecast = m.baselineForecast + 136000;
-  const balancedRecoveryGap = balancedRecoveryForecast - currentMonthTarget;
 
   return (
     <div className="space-y-6">
       <SectionHeader
-        eyebrow="01 — Executive Pulse"
         title="Will UK hit the March target?"
         description="A real-time view of monthly performance, forecasted close and commercial risk."
       />

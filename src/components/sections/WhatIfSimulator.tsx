@@ -59,7 +59,6 @@ export default function WhatIfSimulator() {
   return (
     <div className="space-y-6">
       <SectionHeader
-        eyebrow="05 — What-if Simulator"
         title="What happens if we change the plan?"
         description="Simulate the commercial impact of promotion intensity, channel focus, brand focus and activation week."
       />
@@ -200,7 +199,7 @@ export default function WhatIfSimulator() {
                 </p>
               </div>
               <div className="w-24">
-                <ProgressBar value={result.hitProbability} max={100} tone={probTone === 'neutral' ? 'warning' : probTone as 'success' | 'warning' | 'danger'} />
+                <ProgressBar value={result.hitProbability} max={100} tone={probTone} />
               </div>
             </div>
           </div>
