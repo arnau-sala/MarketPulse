@@ -20,15 +20,26 @@ from analytics.config import (
     DAMM_BRAND_KEYWORDS,
     DATA_DIR,
     FOOTBALL_CSV,
+    FORECAST_HORIZON_WEEKS,
     MAX_VOLUME_HL_QUANTILE,
     MIN_REVENUE,
     MIN_VOLUME_HL,
     PROMOTIONS_XLSX,
+    SEGMENTS,
     TARGET_REVENUE_COL,
     TARGET_VOLUME_COL,
     UK_DATA_XLSX,
     WEEKLY_FEATURES_CSV,
 )
+
+# NOTA — Limitación conocida sobre promociones históricas:
+#   El Trade Plan del Excel solo contiene el plan promocional de 2026.
+#   Esto significa que el histórico (2023-2025) tiene Hay_Promocion=0 en
+#   casi todas las semanas y el modelo no aprende el efecto real de la
+#   promo. Una heurística posible sería derivar promos pasadas desde caídas
+#   anómalas de precio (>15% sobre rolling 8 semanas), pero NO se implementa
+#   aquí porque no podemos validarla sin ground truth. Se documenta como
+#   limitación del modelo en model_metrics.json.
 
 warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
@@ -430,6 +441,76 @@ def load_football_impact(path: Path | None = None) -> pd.DataFrame:
     return weekly_football
 
 
+def extend_promotions_to_future(
+    promo_df: pd.DataFrame,
+    weeks_ahead: int = 16,
+) -> pd.DataFrame:
+    """
+    Replicates the historical promotion pattern into future weeks.
+
+    Strategy: for each (ISO week number, retailer) pair found in the historical
+    promo data, generate entries for the same ISO week in future years until
+    the forecast horizon is covered.
+
+    This ensures that if Tesco ran a promotion in week 21 of 2025, the model
+    will also expect a promotion in week 21 of 2026 and beyond.
+
+    Args:
+        promo_df: output of load_promotion_weeks().
+        weeks_ahead: how many weeks beyond today to extend.
+
+    Returns:
+        Extended DataFrame with the same schema as promo_df.
+    """
+    if promo_df.empty:
+        return promo_df
+
+    promo_df = promo_df.copy()
+    promo_df["semana_inicio"] = pd.to_datetime(promo_df["semana_inicio"])
+
+    latest_promo = promo_df["semana_inicio"].max()
+    horizon_end = pd.Timestamp.now().normalize() + pd.Timedelta(weeks=weeks_ahead)
+
+    if latest_promo >= horizon_end:
+        return promo_df
+
+    # Index historical promos by ISO week number
+    promo_df["iso_week"] = promo_df["semana_inicio"].apply(
+        lambda ts: int(pd.Timestamp(ts).isocalendar().week)
+    )
+
+    # Generate all Monday-aligned future weeks not yet covered
+    future_weeks = pd.date_range(
+        start=latest_promo + pd.Timedelta(weeks=1),
+        end=horizon_end,
+        freq="W-MON",
+    )
+
+    extended: list[dict] = []
+    for future_week in future_weeks:
+        fw_iso = int(future_week.isocalendar().week)
+        matches = promo_df[promo_df["iso_week"] == fw_iso]
+        for _, row in matches.drop_duplicates(subset=["retailer"]).iterrows():
+            extended.append(
+                {
+                    "semana_inicio": future_week.normalize(),
+                    "retailer": row["retailer"],
+                    "Hay_Promocion": 1,
+                }
+            )
+
+    if not extended:
+        return promo_df[["semana_inicio", "retailer", "Hay_Promocion"]]
+
+    extended_df = pd.DataFrame(extended)
+    combined = pd.concat(
+        [promo_df[["semana_inicio", "retailer", "Hay_Promocion"]], extended_df],
+        ignore_index=True,
+    ).drop_duplicates(subset=["semana_inicio", "retailer"])
+
+    return combined
+
+
 def add_football_impact(weekly: pd.DataFrame, football: pd.DataFrame) -> pd.DataFrame:
     out = weekly.copy()
     if football.empty:
@@ -449,6 +530,113 @@ def build_time_features(weekly: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+# ---------------------------------------------------------------------------
+# Bank Holidays (England & Wales)
+# ---------------------------------------------------------------------------
+
+# Static list 2023-2027 — fácil de extender añadiendo fechas al final.
+_UK_BANK_HOLIDAYS: frozenset[str] = frozenset([
+    # 2023
+    "2023-01-02", "2023-04-07", "2023-04-10", "2023-05-01",
+    "2023-05-08",  # Coronación Carlos III
+    "2023-05-29", "2023-08-28", "2023-12-25", "2023-12-26",
+    # 2024
+    "2024-01-01", "2024-03-29", "2024-04-01", "2024-05-06",
+    "2024-05-27", "2024-08-26", "2024-12-25", "2024-12-26",
+    # 2025
+    "2025-01-01", "2025-04-18", "2025-04-21", "2025-05-05",
+    "2025-05-26", "2025-08-25", "2025-12-25", "2025-12-26",
+    # 2026
+    "2026-01-01", "2026-04-03", "2026-04-06", "2026-05-04",
+    "2026-05-25", "2026-08-31", "2026-12-25", "2026-12-28",
+    # 2027 (para cubrir el horizonte de forecast)
+    "2027-01-01", "2027-04-02", "2027-04-05", "2027-05-03",
+    "2027-05-31", "2027-08-30", "2027-12-27", "2027-12-28",
+])
+
+
+def count_bank_holidays_in_week(week_start: pd.Timestamp) -> int:
+    """Cuenta los bank holidays de England & Wales en la semana [lunes, domingo]."""
+    count = 0
+    for offset in range(7):
+        if (week_start + pd.Timedelta(days=offset)).strftime("%Y-%m-%d") in _UK_BANK_HOLIDAYS:
+            count += 1
+    return count
+
+
+def add_bank_holiday_features(weekly: pd.DataFrame) -> pd.DataFrame:
+    """Añade n_bank_holidays al panel semanal."""
+    out = weekly.copy()
+    out["n_bank_holidays"] = out["semana_inicio"].apply(
+        lambda ts: count_bank_holidays_in_week(pd.Timestamp(ts).normalize())
+    )
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Clima — Open-Meteo (London como proxy UK)
+# ---------------------------------------------------------------------------
+
+# Temperaturas medias mensuales de Londres (°C) — fallback si la API no está disponible
+_CLIM_TEMP_BY_MONTH: dict[int, float] = {
+    1: 4.0, 2: 4.5, 3: 7.0, 4: 9.5, 5: 12.5, 6: 16.0,
+    7: 18.5, 8: 18.0, 9: 15.0, 10: 11.0, 11: 7.0, 12: 5.0,
+}
+# Horas de sol semanales medias (horas/día × 7)
+_CLIM_SUN_BY_MONTH: dict[int, float] = {
+    1: 10.5, 2: 17.5, 3: 26.6, 4: 36.4, 5: 44.8, 6: 50.4,
+    7: 49.0, 8: 44.8, 9: 35.0, 10: 23.8, 11: 14.0, 12: 9.1,
+}
+
+
+def load_weather_features(
+    weekly: pd.DataFrame,
+    cache_path: Path | None = None,
+) -> pd.DataFrame:
+    """
+    Añade temp_media_semana y horas_sol_semana al panel semanal.
+
+    Fuente primaria: medias climatológicas mensuales de Londres (sin dependencia
+    de API externa). Si en el futuro se dispone de datos reales, basta con
+    colocar un CSV con columnas [semana_inicio, temp_media_semana, horas_sol_semana]
+    en data/uk_weather_weekly.csv y se usará automáticamente.
+    """
+    from analytics.config import UK_WEATHER_CSV
+
+    csv_path = cache_path or UK_WEATHER_CSV
+    out = weekly.copy()
+
+    # Usar CSV si existe (datos reales descargados previamente)
+    if csv_path.exists():
+        try:
+            weather_weekly = pd.read_csv(csv_path, parse_dates=["semana_inicio"])
+            weather_weekly["semana_inicio"] = pd.to_datetime(weather_weekly["semana_inicio"])
+            out = out.merge(
+                weather_weekly[["semana_inicio", "temp_media_semana", "horas_sol_semana"]],
+                on="semana_inicio",
+                how="left",
+            )
+        except Exception:
+            out["temp_media_semana"] = np.nan
+            out["horas_sol_semana"] = np.nan
+    else:
+        out["temp_media_semana"] = np.nan
+        out["horas_sol_semana"] = np.nan
+
+    # Rellenar huecos (o todo si no hay CSV) con climatología mensual
+    months = out["semana_inicio"].dt.month
+    out["temp_media_semana"] = out["temp_media_semana"].where(
+        out["temp_media_semana"].notna(),
+        months.map(_CLIM_TEMP_BY_MONTH),
+    )
+    out["horas_sol_semana"] = out["horas_sol_semana"].where(
+        out["horas_sol_semana"].notna(),
+        months.map(_CLIM_SUN_BY_MONTH),
+    )
+
+    return out
+
+
 def run_etl(
     *,
     uk_only: bool = True,
@@ -463,15 +651,132 @@ def run_etl(
     cleaned = clean_anomalies(merged)
     weekly = aggregate_weekly(cleaned)
     promos = load_promotion_weeks()
+    promos = extend_promotions_to_future(promos, weeks_ahead=FORECAST_HORIZON_WEEKS + 8)
     weekly = add_promotion_flag(weekly, promos)
     football = load_football_impact()
     weekly = add_football_impact(weekly, football)
     weekly = build_time_features(weekly)
+    weekly = add_bank_holiday_features(weekly)       # NEW — festivos UK
+    weekly = load_weather_features(weekly)           # NEW — temperatura y sol
 
     if save_weekly:
         weekly.to_csv(WEEKLY_FEATURES_CSV, index=False)
 
     return weekly
+
+
+# ---------------------------------------------------------------------------
+# Segmentación canal × marca
+# ---------------------------------------------------------------------------
+
+
+def _filter_segment_rows(
+    merged: pd.DataFrame,
+    *,
+    channel_filter: str | None,
+    brand_pattern: str | None,
+) -> pd.DataFrame:
+    """Filtra el dataframe ya merged por canal y marca de un segmento."""
+    df = merged.copy()
+
+    # Excluir CMBC co-packing del retail (regla 3 del prompt)
+    df = df[~df["Sales Channel"].astype(str).str.contains("CO.?PACK", case=False, na=False, regex=True)]
+
+    if channel_filter:
+        df = df[df["Sales Channel"].astype(str).str.contains(channel_filter, case=False, na=False)]
+
+    if brand_pattern:
+        brand_text = (
+            df["Business Brands"].fillna("").astype(str)
+            + " | "
+            + df["Marca"].fillna("").astype(str)
+        )
+        df = df[brand_text.str.contains(brand_pattern, case=False, na=False, regex=True)]
+
+    return df
+
+
+def aggregate_weekly_by_segment(
+    merged: pd.DataFrame,
+    *,
+    channel_filter: str | None,
+    brand_pattern: str | None,
+) -> pd.DataFrame:
+    """Agrega a semanal filtrando por segmento. Devuelve el panel limpio."""
+    sliced = _filter_segment_rows(
+        merged, channel_filter=channel_filter, brand_pattern=brand_pattern
+    )
+    if sliced.empty:
+        return pd.DataFrame(columns=["semana_inicio", TARGET_VOLUME_COL, TARGET_REVENUE_COL])
+
+    cleaned = clean_anomalies(sliced)
+    return aggregate_weekly(cleaned)
+
+
+def build_segment_panels(
+    *,
+    uk_only: bool = True,
+) -> dict[str, pd.DataFrame]:
+    """
+    Construye un panel semanal por segmento + agregado total.
+
+    Retorna dict {segment_id: weekly_df_con_features}. Cada panel ya tiene
+    promos, fútbol y features de calendario aplicados.
+    """
+    sales, materials, customers = load_raw_tables()
+    merged = merge_dimensions(sales, materials, customers, uk_only=uk_only)
+
+    promos = load_promotion_weeks()
+    promos = extend_promotions_to_future(promos, weeks_ahead=FORECAST_HORIZON_WEEKS + 8)
+    football = load_football_impact()
+
+    panels: dict[str, pd.DataFrame] = {}
+    per_segment_weekly: list[pd.DataFrame] = []
+
+    for seg in SEGMENTS:
+        if seg["segment_id"] == "total_uk_retail":
+            continue  # se construye al final sumando los segmentos retail
+
+        weekly = aggregate_weekly_by_segment(
+            merged,
+            channel_filter=seg["channel_filter"],
+            brand_pattern=seg["brand_pattern"],
+        )
+        if weekly.empty:
+            continue
+
+        weekly = add_promotion_flag(weekly, promos)
+        weekly = add_football_impact(weekly, football)
+        weekly = build_time_features(weekly)
+        weekly = add_bank_holiday_features(weekly)
+        weekly = load_weather_features(weekly)
+        weekly["segment_id"] = seg["segment_id"]
+        weekly["channel"] = seg["channel"]
+        weekly["brand"] = seg["brand"]
+        panels[seg["segment_id"]] = weekly
+        per_segment_weekly.append(weekly[["semana_inicio", TARGET_VOLUME_COL, TARGET_REVENUE_COL]])
+
+    # Agregado total retail = suma de los segmentos retail (excluye CMBC)
+    if per_segment_weekly:
+        total = pd.concat(per_segment_weekly, ignore_index=True)
+        total = (
+            total.groupby("semana_inicio", as_index=False)
+            .agg({TARGET_VOLUME_COL: "sum", TARGET_REVENUE_COL: "sum"})
+            .sort_values("semana_inicio")
+            .reset_index(drop=True)
+        )
+        total["semana_fin"] = total["semana_inicio"] + pd.Timedelta(days=6)
+        total = add_promotion_flag(total, promos)
+        total = add_football_impact(total, football)
+        total = build_time_features(total)
+        total = add_bank_holiday_features(total)
+        total = load_weather_features(total)
+        total["segment_id"] = "total_uk_retail"
+        total["channel"] = "ALL"
+        total["brand"] = "ALL"
+        panels["total_uk_retail"] = total
+
+    return panels
 
 
 if __name__ == "__main__":
