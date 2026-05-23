@@ -31,14 +31,16 @@ export function simulate(
   channel: Channel,
   brand: Brand,
   week: Week,
+  monthlyTarget = monthlyMetrics.monthlyTarget,
+  baselineForecast = monthlyMetrics.baselineForecast,
 ): SimulatorResult {
   const base = baseImpactByIntensity[intensity];
   const incrementalImpact = Math.round(
     base * channelMultiplier[channel] * brandMultiplier[brand] * weekMultiplier[week]
   );
 
-  const newForecast = monthlyMetrics.baselineForecast + incrementalImpact;
-  const remainingGap = newForecast - monthlyMetrics.monthlyTarget;
+  const newForecast = baselineForecast + incrementalImpact;
+  const remainingGap = newForecast - monthlyTarget;
   const hitProbability = clamp(
     monthlyMetrics.hitProbability + incrementalImpact / 4000,
     monthlyMetrics.hitProbability,

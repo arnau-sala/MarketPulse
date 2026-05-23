@@ -1,11 +1,11 @@
-import { BarChart3, TrendingUp, Calendar, Zap, FlaskConical, ChevronRight } from 'lucide-react';
+import { BarChart3, TrendingUp, Calendar, Zap, FlaskConical, ChevronRight, X } from 'lucide-react';
 import type { SectionId, NavItem } from '../../constants/navigation';
 
 const iconMap: Record<SectionId, React.ReactNode> = {
   executive: <BarChart3 size={16} />,
-  gap:       <TrendingUp size={16} />,
-  demand:    <Calendar size={16} />,
-  action:    <Zap size={16} />,
+  gap: <TrendingUp size={16} />,
+  demand: <Calendar size={16} />,
+  action: <Zap size={16} />,
   simulator: <FlaskConical size={16} />,
 };
 
@@ -13,66 +13,71 @@ interface SidebarProps {
   items: NavItem[];
   active: SectionId;
   onSelect: (id: SectionId) => void;
+  open: boolean;
+  onClose: () => void;
 }
 
-export default function Sidebar({ items, active, onSelect }: SidebarProps) {
+export default function Sidebar({ items, active, onSelect, open, onClose }: SidebarProps) {
   return (
-    <aside className="fixed inset-y-0 left-0 w-60 bg-sidebar flex flex-col z-30 select-none">
-      {/* Logo */}
-      <div className="px-6 pt-7 pb-6 border-b border-white/[0.07]">
-        <div className="flex items-center gap-2 mb-0.5">
-          <div className="w-7 h-7 rounded-lg bg-brand-red flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xs font-bold tracking-tight font-display">MP</span>
+    <>
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex w-60 select-none flex-col bg-sidebar transition-transform duration-300 ease-out ${
+          open ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        style={{ backgroundColor: 'rgba(255, 252, 248, 0.98)' }}
+      >
+        <div className="relative border-b border-ink-200 px-6 pb-6 pt-7 pr-14">
+          <div>
+            <span className="block text-base font-semibold tracking-tight text-ink-900">MarketPulse</span>
+            <p className="mt-0.5 text-[11px] font-medium uppercase tracking-widest text-ink-500">UK Action Center</p>
           </div>
-          <span className="text-white font-semibold text-base tracking-tight">MarketPulse</span>
+
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close sidebar"
+            className="absolute right-6 top-6 inline-flex h-8 w-8 items-center justify-center text-ink-500 transition-colors hover:text-ink-900"
+          >
+            <X size={20} strokeWidth={1.75} />
+          </button>
         </div>
-        <p className="text-white/40 text-[11px] font-medium tracking-widest uppercase pl-9">
-          UK Action Center
-        </p>
-      </div>
 
-      {/* Nav */}
-      <nav className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto">
-        {items.map((item) => {
-          const isActive = item.id === active;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onSelect(item.id)}
-              className={`
-                w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 group
-                ${isActive
-                  ? 'bg-white/[0.10] text-white'
-                  : 'text-white/50 hover:bg-white/[0.05] hover:text-white/80'
-                }
-              `}
-            >
-              <span className={`flex-shrink-0 transition-colors ${isActive ? 'text-brand-red' : 'text-white/30 group-hover:text-white/50'}`}>
-                {iconMap[item.id]}
-              </span>
-              <span className="flex-1 min-w-0">
-                <span className="block text-[13px] font-medium leading-tight truncate">
-                  {item.label}
-                </span>
-                <span className={`block text-[11px] leading-tight mt-0.5 truncate transition-colors ${isActive ? 'text-white/40' : 'text-white/25 group-hover:text-white/35'}`}>
-                  {item.description}
-                </span>
-              </span>
-              {isActive && (
-                <ChevronRight size={12} className="text-white/30 flex-shrink-0" />
-              )}
-            </button>
-          );
-        })}
-      </nav>
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
+          {items.map((item) => {
+            const isActive = item.id === active;
 
-      {/* Footer */}
-      <div className="px-6 py-5 border-t border-white/[0.07]">
-        <p className="text-white/25 text-[11px] font-medium leading-relaxed">
-          Damm × Engineering HUB
-        </p>
-        <p className="text-white/15 text-[10px] mt-0.5">Hackathon Prototype</p>
-      </div>
-    </aside>
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  onSelect(item.id);
+                }}
+                className={`w-full rounded-xl px-3 py-2.5 text-left transition-all duration-150 group flex items-center gap-3 ${
+                  isActive
+                    ? 'border border-brand-red/15 bg-brand-red/8 text-ink-900 shadow-[0_1px_0_rgba(15,23,42,0.03)]'
+                    : 'border border-transparent text-ink-600 hover:border-ink-200 hover:bg-white hover:text-ink-900'
+                }`}
+              >
+                <span className={`flex-shrink-0 transition-colors ${isActive ? 'text-brand-red' : 'text-ink-400 group-hover:text-ink-600'}`}>
+                  {iconMap[item.id]}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13px] font-medium leading-tight">{item.label}</span>
+                  <span className={`mt-0.5 block truncate text-[11px] leading-tight transition-colors ${isActive ? 'text-ink-500' : 'text-ink-400 group-hover:text-ink-500'}`}>
+                    {item.description}
+                  </span>
+                </span>
+                {isActive && <ChevronRight size={12} className="flex-shrink-0 text-brand-red" />}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="border-t border-ink-200 px-6 py-5">
+          <p className="text-[11px] font-medium leading-relaxed text-ink-500">Damm × Engineering HUB</p>
+          <p className="mt-0.5 text-[10px] text-ink-400">Hackathon Prototype</p>
+        </div>
+      </aside>
+    </>
   );
 }
