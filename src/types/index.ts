@@ -28,6 +28,20 @@ export interface ForecastPoint {
   actionForecast: number | null;
 }
 
+export interface SalesMomentumPoint {
+  period: string;
+  actualSales: number | null;
+  noActionForecast: number | null;
+  recommendedForecast: number | null;
+  target: number;
+  today?: boolean;
+}
+
+export interface SalesMomentumPeriod {
+  target: number;
+  points: SalesMomentumPoint[];
+}
+
 export interface GapDriver {
   name: string;
   impact: number;

@@ -8,9 +8,9 @@ import StatusBadge from '../common/StatusBadge';
 import ProgressBar from '../common/ProgressBar';
 import InsightCard from '../common/InsightCard';
 import type { PromoIntensity, Channel, Brand, Week, Tone } from '../../types';
+import { useTargetPlan } from '../../context/TargetContext';
 
 const baselineForecast = 1080000;
-const monthlyTarget    = 1200000;
 
 function OptionButton<T extends string>({
   value,
@@ -41,12 +41,13 @@ function OptionButton<T extends string>({
 }
 
 export default function WhatIfSimulator() {
+  const { currentMonthTarget } = useTargetPlan();
   const [intensity, setIntensity] = useState<PromoIntensity>('Medium');
   const [channel,   setChannel]   = useState<Channel>('Off-Trade');
   const [brand,     setBrand]     = useState<Brand>('Estrella Damm');
   const [week,      setWeek]      = useState<Week>('Week 3');
 
-  const result = simulate(intensity, channel, brand, week);
+  const result = simulate(intensity, channel, brand, week, currentMonthTarget, baselineForecast);
   const explanation = getScenarioExplanation(channel, week, brand, result);
 
   const gapTone: Tone = result.remainingGap >= 0 ? 'success' : result.remainingGap > -40000 ? 'warning' : 'danger';
@@ -156,13 +157,13 @@ export default function WhatIfSimulator() {
             </div>
             <div className="mt-3">
               <div className="flex justify-between text-[11px] mb-1">
-                <span className="text-ink-500">vs target of {formatCurrency(monthlyTarget, true)}</span>
-                <span className="font-semibold text-ink-700">{((result.newForecast / monthlyTarget) * 100).toFixed(0)}%</span>
+                <span className="text-ink-500">vs target of {formatCurrency(currentMonthTarget, true)}</span>
+                <span className="font-semibold text-ink-700">{((result.newForecast / currentMonthTarget) * 100).toFixed(0)}%</span>
               </div>
               <ProgressBar
                 value={result.newForecast}
-                max={monthlyTarget}
-                tone={result.newForecast >= monthlyTarget ? 'success' : 'warning'}
+                max={currentMonthTarget}
+                tone={result.newForecast >= currentMonthTarget ? 'success' : 'warning'}
               />
             </div>
           </div>
