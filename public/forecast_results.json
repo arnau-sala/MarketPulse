@@ -1,0 +1,1728 @@
+{
+  "meta": {
+    "target": "Hl",
+    "unit": "hectoliters",
+    "horizon_weeks": 8,
+    "model": "LightGBM",
+    "regressors": [
+      "Hay_Promocion",
+      "Impacto_Futbol"
+    ],
+    "metrics": {
+      "mae_holdout_hl": 2426.6569311829608,
+      "residual_std_hl": 3447.5235164271435
+    }
+  },
+  "series": [
+    {
+      "fecha": "2023-01-23",
+      "tipo": "historico",
+      "venta_real_historica": 2013.75,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-01-30",
+      "tipo": "historico",
+      "venta_real_historica": 5331.9,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-02-06",
+      "tipo": "historico",
+      "venta_real_historica": 3318.15,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-02-13",
+      "tipo": "historico",
+      "venta_real_historica": 3318.15,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-02-20",
+      "tipo": "historico",
+      "venta_real_historica": 3318.15,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-02-27",
+      "tipo": "historico",
+      "venta_real_historica": 9468.3,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-03-06",
+      "tipo": "historico",
+      "venta_real_historica": 6150.15,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-03-13",
+      "tipo": "historico",
+      "venta_real_historica": 6150.15,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-03-20",
+      "tipo": "historico",
+      "venta_real_historica": 6150.15,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-03-27",
+      "tipo": "historico",
+      "venta_real_historica": 12939.82,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2023-04-03",
+      "tipo": "historico",
+      "venta_real_historica": 6789.67,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 69.0
+    },
+    {
+      "fecha": "2023-04-10",
+      "tipo": "historico",
+      "venta_real_historica": 6789.67,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2023-04-17",
+      "tipo": "historico",
+      "venta_real_historica": 6789.67,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2023-04-24",
+      "tipo": "historico",
+      "venta_real_historica": 6789.67,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 54.0
+    },
+    {
+      "fecha": "2023-05-01",
+      "tipo": "historico",
+      "venta_real_historica": 8484.53,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 54.0
+    },
+    {
+      "fecha": "2023-05-08",
+      "tipo": "historico",
+      "venta_real_historica": 8484.53,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 54.0
+    },
+    {
+      "fecha": "2023-05-15",
+      "tipo": "historico",
+      "venta_real_historica": 8484.53,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2023-05-22",
+      "tipo": "historico",
+      "venta_real_historica": 8484.53,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 75.0
+    },
+    {
+      "fecha": "2023-05-29",
+      "tipo": "historico",
+      "venta_real_historica": 15707.79,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-06-05",
+      "tipo": "historico",
+      "venta_real_historica": 7223.26,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-06-12",
+      "tipo": "historico",
+      "venta_real_historica": 7223.26,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-06-19",
+      "tipo": "historico",
+      "venta_real_historica": 7223.26,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-06-26",
+      "tipo": "historico",
+      "venta_real_historica": 12469.98,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-07-03",
+      "tipo": "historico",
+      "venta_real_historica": 5246.72,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-07-10",
+      "tipo": "historico",
+      "venta_real_historica": 5246.72,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-07-17",
+      "tipo": "historico",
+      "venta_real_historica": 5246.72,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-07-24",
+      "tipo": "historico",
+      "venta_real_historica": 5246.72,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-07-31",
+      "tipo": "historico",
+      "venta_real_historica": 11143.84,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 18.0
+    },
+    {
+      "fecha": "2023-08-07",
+      "tipo": "historico",
+      "venta_real_historica": 5897.12,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2023-08-14",
+      "tipo": "historico",
+      "venta_real_historica": 5897.12,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 27.0
+    },
+    {
+      "fecha": "2023-08-21",
+      "tipo": "historico",
+      "venta_real_historica": 5897.12,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2023-08-28",
+      "tipo": "historico",
+      "venta_real_historica": 12244.9,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 48.0
+    },
+    {
+      "fecha": "2023-09-04",
+      "tipo": "historico",
+      "venta_real_historica": 6347.78,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-09-11",
+      "tipo": "historico",
+      "venta_real_historica": 6347.78,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2023-09-18",
+      "tipo": "historico",
+      "venta_real_historica": 6347.78,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2023-09-25",
+      "tipo": "historico",
+      "venta_real_historica": 11320.94,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2023-10-02",
+      "tipo": "historico",
+      "venta_real_historica": 4973.16,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2023-10-09",
+      "tipo": "historico",
+      "venta_real_historica": 4973.16,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-10-16",
+      "tipo": "historico",
+      "venta_real_historica": 4973.16,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 36.0
+    },
+    {
+      "fecha": "2023-10-23",
+      "tipo": "historico",
+      "venta_real_historica": 4973.16,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 54.0
+    },
+    {
+      "fecha": "2023-10-30",
+      "tipo": "historico",
+      "venta_real_historica": 11099.47,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 54.0
+    },
+    {
+      "fecha": "2023-11-06",
+      "tipo": "historico",
+      "venta_real_historica": 6126.3,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 57.0
+    },
+    {
+      "fecha": "2023-11-13",
+      "tipo": "historico",
+      "venta_real_historica": 6126.3,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2023-11-20",
+      "tipo": "historico",
+      "venta_real_historica": 6126.3,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2023-11-27",
+      "tipo": "historico",
+      "venta_real_historica": 11533.24,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2023-12-04",
+      "tipo": "historico",
+      "venta_real_historica": 5406.94,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 93.0
+    },
+    {
+      "fecha": "2023-12-11",
+      "tipo": "historico",
+      "venta_real_historica": 5406.94,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 42.0
+    },
+    {
+      "fecha": "2023-12-18",
+      "tipo": "historico",
+      "venta_real_historica": 5406.94,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2023-12-25",
+      "tipo": "historico",
+      "venta_real_historica": 5406.94,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 81.0
+    },
+    {
+      "fecha": "2024-01-01",
+      "tipo": "historico",
+      "venta_real_historica": 4455.23,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 21.0
+    },
+    {
+      "fecha": "2024-01-08",
+      "tipo": "historico",
+      "venta_real_historica": 4455.23,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 15.0
+    },
+    {
+      "fecha": "2024-01-15",
+      "tipo": "historico",
+      "venta_real_historica": 4455.23,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 12.0
+    },
+    {
+      "fecha": "2024-01-22",
+      "tipo": "historico",
+      "venta_real_historica": 4455.23,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 30.0
+    },
+    {
+      "fecha": "2024-01-29",
+      "tipo": "historico",
+      "venta_real_historica": 8765.11,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 81.0
+    },
+    {
+      "fecha": "2024-02-05",
+      "tipo": "historico",
+      "venta_real_historica": 4309.88,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2024-02-12",
+      "tipo": "historico",
+      "venta_real_historica": 4309.88,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 54.0
+    },
+    {
+      "fecha": "2024-02-19",
+      "tipo": "historico",
+      "venta_real_historica": 4309.88,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 48.0
+    },
+    {
+      "fecha": "2024-02-26",
+      "tipo": "historico",
+      "venta_real_historica": 12464.72,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 66.0
+    },
+    {
+      "fecha": "2024-03-04",
+      "tipo": "historico",
+      "venta_real_historica": 8154.83,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 30.0
+    },
+    {
+      "fecha": "2024-03-11",
+      "tipo": "historico",
+      "venta_real_historica": 8154.83,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 39.0
+    },
+    {
+      "fecha": "2024-03-18",
+      "tipo": "historico",
+      "venta_real_historica": 8154.83,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2024-03-25",
+      "tipo": "historico",
+      "venta_real_historica": 8154.83,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 48.0
+    },
+    {
+      "fecha": "2024-04-01",
+      "tipo": "historico",
+      "venta_real_historica": 5973.81,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 78.0
+    },
+    {
+      "fecha": "2024-04-08",
+      "tipo": "historico",
+      "venta_real_historica": 5973.81,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2024-04-15",
+      "tipo": "historico",
+      "venta_real_historica": 5973.81,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 27.0
+    },
+    {
+      "fecha": "2024-04-22",
+      "tipo": "historico",
+      "venta_real_historica": 5973.81,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 66.0
+    },
+    {
+      "fecha": "2024-04-29",
+      "tipo": "historico",
+      "venta_real_historica": 14353.39,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 48.0
+    },
+    {
+      "fecha": "2024-05-06",
+      "tipo": "historico",
+      "venta_real_historica": 8379.59,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 48.0
+    },
+    {
+      "fecha": "2024-05-13",
+      "tipo": "historico",
+      "venta_real_historica": 8379.59,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 78.0
+    },
+    {
+      "fecha": "2024-05-20",
+      "tipo": "historico",
+      "venta_real_historica": 8379.59,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2024-05-27",
+      "tipo": "historico",
+      "venta_real_historica": 16463.15,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2024-06-03",
+      "tipo": "historico",
+      "venta_real_historica": 8083.57,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2024-06-10",
+      "tipo": "historico",
+      "venta_real_historica": 8083.57,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2024-06-17",
+      "tipo": "historico",
+      "venta_real_historica": 8083.57,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2024-06-24",
+      "tipo": "historico",
+      "venta_real_historica": 8083.57,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2024-07-01",
+      "tipo": "historico",
+      "venta_real_historica": 9484.81,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2024-07-08",
+      "tipo": "historico",
+      "venta_real_historica": 9484.81,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2024-07-15",
+      "tipo": "historico",
+      "venta_real_historica": 9484.81,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2024-07-22",
+      "tipo": "historico",
+      "venta_real_historica": 9484.81,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2024-07-29",
+      "tipo": "historico",
+      "venta_real_historica": 19002.95,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 15.0
+    },
+    {
+      "fecha": "2024-08-05",
+      "tipo": "historico",
+      "venta_real_historica": 9518.14,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 21.0
+    },
+    {
+      "fecha": "2024-08-12",
+      "tipo": "historico",
+      "venta_real_historica": 9518.14,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 27.0
+    },
+    {
+      "fecha": "2024-08-19",
+      "tipo": "historico",
+      "venta_real_historica": 9518.14,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2024-08-26",
+      "tipo": "historico",
+      "venta_real_historica": 14105.9,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 48.0
+    },
+    {
+      "fecha": "2024-09-02",
+      "tipo": "historico",
+      "venta_real_historica": 4587.76,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2024-09-09",
+      "tipo": "historico",
+      "venta_real_historica": 4587.76,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 48.0
+    },
+    {
+      "fecha": "2024-09-16",
+      "tipo": "historico",
+      "venta_real_historica": 4587.76,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 36.0
+    },
+    {
+      "fecha": "2024-09-23",
+      "tipo": "historico",
+      "venta_real_historica": 4587.76,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2024-09-30",
+      "tipo": "historico",
+      "venta_real_historica": 11932.88,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2024-10-07",
+      "tipo": "historico",
+      "venta_real_historica": 7345.12,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2024-10-14",
+      "tipo": "historico",
+      "venta_real_historica": 7345.12,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2024-10-21",
+      "tipo": "historico",
+      "venta_real_historica": 7345.12,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2024-10-28",
+      "tipo": "historico",
+      "venta_real_historica": 13944.57,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 57.0
+    },
+    {
+      "fecha": "2024-11-04",
+      "tipo": "historico",
+      "venta_real_historica": 6599.45,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2024-11-11",
+      "tipo": "historico",
+      "venta_real_historica": 6599.45,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2024-11-18",
+      "tipo": "historico",
+      "venta_real_historica": 6599.45,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2024-11-25",
+      "tipo": "historico",
+      "venta_real_historica": 11910.84,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 54.0
+    },
+    {
+      "fecha": "2024-12-02",
+      "tipo": "historico",
+      "venta_real_historica": 5311.39,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 81.0
+    },
+    {
+      "fecha": "2024-12-09",
+      "tipo": "historico",
+      "venta_real_historica": 5311.39,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 42.0
+    },
+    {
+      "fecha": "2024-12-16",
+      "tipo": "historico",
+      "venta_real_historica": 5311.39,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2024-12-23",
+      "tipo": "historico",
+      "venta_real_historica": 5311.39,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 84.0
+    },
+    {
+      "fecha": "2024-12-30",
+      "tipo": "historico",
+      "venta_real_historica": 9403.44,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 75.0
+    },
+    {
+      "fecha": "2025-01-06",
+      "tipo": "historico",
+      "venta_real_historica": 4092.05,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 27.0
+    },
+    {
+      "fecha": "2025-01-13",
+      "tipo": "historico",
+      "venta_real_historica": 4092.05,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 63.0
+    },
+    {
+      "fecha": "2025-01-20",
+      "tipo": "historico",
+      "venta_real_historica": 4092.05,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 48.0
+    },
+    {
+      "fecha": "2025-01-27",
+      "tipo": "historico",
+      "venta_real_historica": 10034.17,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2025-02-03",
+      "tipo": "historico",
+      "venta_real_historica": 5942.13,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 6.0
+    },
+    {
+      "fecha": "2025-02-10",
+      "tipo": "historico",
+      "venta_real_historica": 5942.13,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2025-02-17",
+      "tipo": "historico",
+      "venta_real_historica": 5942.13,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2025-02-24",
+      "tipo": "historico",
+      "venta_real_historica": 12140.02,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 66.0
+    },
+    {
+      "fecha": "2025-03-03",
+      "tipo": "historico",
+      "venta_real_historica": 6197.89,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 27.0
+    },
+    {
+      "fecha": "2025-03-10",
+      "tipo": "historico",
+      "venta_real_historica": 6197.89,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2025-03-17",
+      "tipo": "historico",
+      "venta_real_historica": 6197.89,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2025-03-24",
+      "tipo": "historico",
+      "venta_real_historica": 6197.89,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 18.0
+    },
+    {
+      "fecha": "2025-03-31",
+      "tipo": "historico",
+      "venta_real_historica": 14934.4,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 75.0
+    },
+    {
+      "fecha": "2025-04-07",
+      "tipo": "historico",
+      "venta_real_historica": 8736.51,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 48.0
+    },
+    {
+      "fecha": "2025-04-14",
+      "tipo": "historico",
+      "venta_real_historica": 8736.51,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 33.0
+    },
+    {
+      "fecha": "2025-04-21",
+      "tipo": "historico",
+      "venta_real_historica": 8736.51,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 48.0
+    },
+    {
+      "fecha": "2025-04-28",
+      "tipo": "historico",
+      "venta_real_historica": 17866.84,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 48.0
+    },
+    {
+      "fecha": "2025-05-05",
+      "tipo": "historico",
+      "venta_real_historica": 9130.33,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2025-05-12",
+      "tipo": "historico",
+      "venta_real_historica": 9130.33,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 57.0
+    },
+    {
+      "fecha": "2025-05-19",
+      "tipo": "historico",
+      "venta_real_historica": 9130.33,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 39.0
+    },
+    {
+      "fecha": "2025-05-26",
+      "tipo": "historico",
+      "venta_real_historica": 14679.84,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2025-06-02",
+      "tipo": "historico",
+      "venta_real_historica": 5549.51,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2025-06-09",
+      "tipo": "historico",
+      "venta_real_historica": 5549.51,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2025-06-16",
+      "tipo": "historico",
+      "venta_real_historica": 5549.51,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2025-06-23",
+      "tipo": "historico",
+      "venta_real_historica": 5549.51,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2025-06-30",
+      "tipo": "historico",
+      "venta_real_historica": 13897.71,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2025-07-07",
+      "tipo": "historico",
+      "venta_real_historica": 8348.2,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2025-07-14",
+      "tipo": "historico",
+      "venta_real_historica": 8348.2,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2025-07-21",
+      "tipo": "historico",
+      "venta_real_historica": 8348.2,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2025-07-28",
+      "tipo": "historico",
+      "venta_real_historica": 16060.11,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 15.0
+    },
+    {
+      "fecha": "2025-08-04",
+      "tipo": "historico",
+      "venta_real_historica": 7711.92,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 21.0
+    },
+    {
+      "fecha": "2025-08-11",
+      "tipo": "historico",
+      "venta_real_historica": 7711.92,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 27.0
+    },
+    {
+      "fecha": "2025-08-18",
+      "tipo": "historico",
+      "venta_real_historica": 7711.92,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 42.0
+    },
+    {
+      "fecha": "2025-08-25",
+      "tipo": "historico",
+      "venta_real_historica": 7711.92,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2025-09-01",
+      "tipo": "historico",
+      "venta_real_historica": 7856.29,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2025-09-08",
+      "tipo": "historico",
+      "venta_real_historica": 7856.29,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 48.0
+    },
+    {
+      "fecha": "2025-09-15",
+      "tipo": "historico",
+      "venta_real_historica": 7856.29,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 33.0
+    },
+    {
+      "fecha": "2025-09-22",
+      "tipo": "historico",
+      "venta_real_historica": 7856.29,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2025-09-29",
+      "tipo": "historico",
+      "venta_real_historica": 14984.47,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2025-10-06",
+      "tipo": "historico",
+      "venta_real_historica": 7128.18,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2025-10-13",
+      "tipo": "historico",
+      "venta_real_historica": 7128.18,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2025-10-20",
+      "tipo": "historico",
+      "venta_real_historica": 7128.18,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2025-10-27",
+      "tipo": "historico",
+      "venta_real_historica": 14194.02,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2025-11-03",
+      "tipo": "historico",
+      "venta_real_historica": 7065.84,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2025-11-10",
+      "tipo": "historico",
+      "venta_real_historica": 7065.84,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 0.0
+    },
+    {
+      "fecha": "2025-11-17",
+      "tipo": "historico",
+      "venta_real_historica": 7065.84,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2025-11-24",
+      "tipo": "historico",
+      "venta_real_historica": 7065.84,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 54.0
+    },
+    {
+      "fecha": "2025-12-01",
+      "tipo": "historico",
+      "venta_real_historica": 6836.3,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 90.0
+    },
+    {
+      "fecha": "2025-12-08",
+      "tipo": "historico",
+      "venta_real_historica": 6836.3,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 42.0
+    },
+    {
+      "fecha": "2025-12-15",
+      "tipo": "historico",
+      "venta_real_historica": 6836.3,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 54.0
+    },
+    {
+      "fecha": "2025-12-22",
+      "tipo": "historico",
+      "venta_real_historica": 6836.3,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 0,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2025-12-29",
+      "tipo": "historico",
+      "venta_real_historica": 11301.15,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 93.0
+    },
+    {
+      "fecha": "2026-01-05",
+      "tipo": "historico",
+      "venta_real_historica": 4464.85,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 51.0
+    },
+    {
+      "fecha": "2026-01-12",
+      "tipo": "historico",
+      "venta_real_historica": 4464.85,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 33.0
+    },
+    {
+      "fecha": "2026-01-19",
+      "tipo": "historico",
+      "venta_real_historica": 4464.85,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 48.0
+    },
+    {
+      "fecha": "2026-01-26",
+      "tipo": "historico",
+      "venta_real_historica": 10250.28,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 48.0
+    },
+    {
+      "fecha": "2026-02-02",
+      "tipo": "historico",
+      "venta_real_historica": 5785.43,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 45.0
+    },
+    {
+      "fecha": "2026-02-09",
+      "tipo": "historico",
+      "venta_real_historica": 5785.43,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 63.0
+    },
+    {
+      "fecha": "2026-02-16",
+      "tipo": "historico",
+      "venta_real_historica": 5785.43,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 48.0
+    },
+    {
+      "fecha": "2026-02-23",
+      "tipo": "historico",
+      "venta_real_historica": 13188.61,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 54.0
+    },
+    {
+      "fecha": "2026-03-02",
+      "tipo": "historico",
+      "venta_real_historica": 7403.18,
+      "prediccion_futura": null,
+      "limite_inferior": null,
+      "limite_superior": null,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 39.0
+    },
+    {
+      "fecha": "2026-05-04",
+      "tipo": "forecast",
+      "venta_real_historica": null,
+      "prediccion_futura": 12324.09,
+      "limite_inferior": 5566.94,
+      "limite_superior": 19081.23,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 42.0
+    },
+    {
+      "fecha": "2026-05-11",
+      "tipo": "forecast",
+      "venta_real_historica": null,
+      "prediccion_futura": 8582.92,
+      "limite_inferior": 1825.77,
+      "limite_superior": 15340.07,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 42.0
+    },
+    {
+      "fecha": "2026-05-18",
+      "tipo": "forecast",
+      "venta_real_historica": null,
+      "prediccion_futura": 12034.82,
+      "limite_inferior": 5277.67,
+      "limite_superior": 18791.96,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 42.0
+    },
+    {
+      "fecha": "2026-05-25",
+      "tipo": "forecast",
+      "venta_real_historica": null,
+      "prediccion_futura": 8530.66,
+      "limite_inferior": 1773.51,
+      "limite_superior": 15287.8,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 42.0
+    },
+    {
+      "fecha": "2026-06-01",
+      "tipo": "forecast",
+      "venta_real_historica": null,
+      "prediccion_futura": 13716.49,
+      "limite_inferior": 6959.34,
+      "limite_superior": 20473.63,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 42.0
+    },
+    {
+      "fecha": "2026-06-08",
+      "tipo": "forecast",
+      "venta_real_historica": null,
+      "prediccion_futura": 7845.66,
+      "limite_inferior": 1088.51,
+      "limite_superior": 14602.8,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 42.0
+    },
+    {
+      "fecha": "2026-06-15",
+      "tipo": "forecast",
+      "venta_real_historica": null,
+      "prediccion_futura": 10978.01,
+      "limite_inferior": 4220.86,
+      "limite_superior": 17735.15,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 42.0
+    },
+    {
+      "fecha": "2026-06-22",
+      "tipo": "forecast",
+      "venta_real_historica": null,
+      "prediccion_futura": 7665.73,
+      "limite_inferior": 908.58,
+      "limite_superior": 14422.88,
+      "Hay_Promocion": 1,
+      "Impacto_Futbol": 42.0
+    }
+  ]
+}
