@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckCircle2, Star, TrendingUp, AlertTriangle, Shield, Sparkles, Loader2 } from 'lucide-react';
-import { actionPlans, monthlyMetrics } from '../../data/mockData';
+import { fetchActionPlans } from '../../services/marketPulseApi';
+import type { DataSource } from '../../services/marketPulseApi';
+import { monthlyMetrics } from '../../data/mockData';
 import { formatCurrency } from '../../utils/formatters';
 import SectionHeader from '../common/SectionHeader';
 import InsightCard from '../common/InsightCard';
@@ -28,15 +30,40 @@ function confidenceLabel(c: number) {
   return { label: 'Lower confidence', tone: 'neutral' as Tone };
 }
 
+function SourceBadge({ source }: { source: DataSource }) {
+  return (
+    <span className={`inline-flex items-center text-[9px] font-semibold px-1.5 py-0.5 rounded-full border ${
+      source === 'api'
+        ? 'bg-success-light text-success border-success/20'
+        : 'bg-ink-100 text-ink-500 border-ink-200'
+    }`}>
+      {source === 'api' ? 'Live API' : 'Demo data'}
+    </span>
+  );
+}
+
 export default function ActionPlanner() {
-  const defaultPlan = actionPlans.find((p) => p.recommended)?.id ?? actionPlans[0].id;
-  const [selectedId, setSelectedId] = useState<string>(defaultPlan);
-  const selected: ActionPlan = actionPlans.find((p) => p.id === selectedId) ?? actionPlans[0];
+  const [plans, setPlans] = useState<ActionPlan[]>([]);
+  const [source, setSource] = useState<DataSource>('mock');
+  const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string>('');
 
   const { currentMonthTarget } = useTargetPlan();
   const [explanation, setExplanation] = useState<string | null>(null);
   const [explanationModel, setExplanationModel] = useState('');
   const [explanationLoading, setExplanationLoading] = useState(false);
+
+  useEffect(() => {
+    fetchActionPlans().then(({ data, source: s }) => {
+      setPlans(data);
+      setSource(s);
+      const recommended = data.find((p) => p.recommended);
+      setSelectedId(recommended?.id ?? data[0]?.id ?? '');
+      setLoading(false);
+    });
+  }, []);
+
+  const selected: ActionPlan | undefined = plans.find((p) => p.id === selectedId) ?? plans[0];
 
   const handleSelectPlan = (id: string) => {
     setSelectedId(id);
@@ -44,6 +71,7 @@ export default function ActionPlanner() {
   };
 
   const handleExplain = async () => {
+    if (!selected) return;
     setExplanationLoading(true);
     setExplanation(null);
     try {
@@ -78,6 +106,19 @@ export default function ActionPlanner() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader title="What should we do now?" description="Loading recovery plans…" />
+        <div className="animate-pulse space-y-3">
+          {[1, 2, 3].map((i) => <div key={i} className="h-28 bg-ink-100 rounded-2xl" />)}
+        </div>
+      </div>
+    );
+  }
+
+  if (!selected) return null;
+
   return (
     <div className="space-y-6">
       <SectionHeader
@@ -87,7 +128,7 @@ export default function ActionPlanner() {
 
       {/* Plan selector */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {actionPlans.map((plan) => {
+        {plans.map((plan) => {
           const isActive = plan.id === selectedId;
           return (
             <button
@@ -144,12 +185,12 @@ export default function ActionPlanner() {
 
       {/* Selected plan detail */}
       <div className="bg-white rounded-2xl border border-ink-300/60 shadow-card px-6 py-6 space-y-5">
-        {/* Plan header */}
         <div className="flex flex-col sm:flex-row sm:items-start gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h2 className="text-[18px] font-bold text-ink-900">{selected.name}</h2>
               {selected.recommended && <StatusBadge status="Recommended" tone="warning" size="sm" />}
+              <SourceBadge source={source} />
             </div>
             <p className="text-[13px] text-ink-500">{selected.explanation}</p>
           </div>
@@ -161,7 +202,6 @@ export default function ActionPlanner() {
           </div>
         </div>
 
-        {/* KPI row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-ink-100">
           <div>
             <p className="text-[10px] font-semibold text-ink-400 uppercase tracking-wide mb-1">Forecast after</p>
@@ -191,7 +231,6 @@ export default function ActionPlanner() {
           </div>
         </div>
 
-        {/* Actions list */}
         <div className="space-y-3 pt-2 border-t border-ink-100">
           <p className="text-[12px] font-semibold text-ink-500 uppercase tracking-wider">Actions in this plan</p>
           {selected.actions.map((action, i) => {
@@ -223,7 +262,7 @@ export default function ActionPlanner() {
         </div>
       </div>
 
-      {/* Explain plan — Groq LLM (plain English for the field team) */}
+      {/* Explain plan */}
       <div className="bg-white rounded-2xl border border-ink-300/60 shadow-card px-5 py-5">
         <div className="flex items-center justify-between mb-3">
           <div>
@@ -238,13 +277,9 @@ export default function ActionPlanner() {
             className="flex items-center gap-2 bg-ink-900 hover:bg-ink-700 disabled:opacity-50 text-white text-[12px] font-semibold px-4 py-2 rounded-xl transition-colors"
           >
             {explanationLoading ? (
-              <>
-                <Loader2 size={13} className="animate-spin" /> Generating…
-              </>
+              <><Loader2 size={13} className="animate-spin" /> Generating…</>
             ) : (
-              <>
-                <Sparkles size={13} /> Explain for my team
-              </>
+              <><Sparkles size={13} /> Explain for my team</>
             )}
           </button>
         </div>
@@ -267,26 +302,22 @@ export default function ActionPlanner() {
         )}
       </div>
 
-      {/* Why this plan? */}
       <InsightCard title="Why this plan?" tone="neutral">
         {selected.id === 'balanced' ? (
           <>
             This plan prioritises <strong>Off-Trade because it explains the largest share of the gap</strong>.
             It activates during <strong>Week 3, the strongest demand window</strong>, and pulls one planned
-            promotion into the current month to improve closing probability. The three actions are
-            coordinated to avoid execution conflicts and can be briefed to the field team within 48 hours.
+            promotion into the current month to improve closing probability.
           </>
         ) : selected.id === 'conservative' ? (
           <>
-            This plan focuses on a <strong>single high-confidence lever</strong> — Estrella Damm push in
-            Off-Trade — to reduce the gap by approximately 50% with minimal execution complexity and low
-            budget risk. Best suited when the team has limited capacity.
+            This plan focuses on a <strong>single high-confidence lever</strong> to reduce the gap by
+            approximately 50% with minimal execution complexity and low budget risk.
           </>
         ) : (
           <>
-            This plan adds an <strong>Online flash activation for Estrella Daura</strong> to capture the
-            health-conscious segment alongside the core Off-Trade push. Higher potential upside but requires
-            cross-functional coordination across trade marketing and digital media within tight timelines.
+            This plan adds an <strong>additional online or premium activation</strong> to maximise upside,
+            but requires more cross-functional coordination.
           </>
         )}
       </InsightCard>

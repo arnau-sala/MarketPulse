@@ -205,7 +205,7 @@ const CHART_ANIMATION_MS = 1400;
 
 export default function SalesMomentumChart() {
   const { data: salesMomentumData } = useSalesMomentumData();
-  const { currentMonthTarget, currentQuarterTarget, weeklyTarget, annualTarget } = useTargetPlan();
+  const { currentMonthTarget, quarterlyTarget: currentQuarterTarget, weeklyTarget, annualTarget } = useTargetPlan();
   const [period, setPeriod] = useState<PeriodKey>('week');
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [chartAnimationActive, setChartAnimationActive] = useState(true);

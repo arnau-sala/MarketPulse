@@ -111,8 +111,8 @@ MOCK_GAP_DRIVERS = [
         "share": 43,
         "dimension": "Channel",
         "explanation": (
-            "Off-Trade is trending below expected pace, especially in Tesco and Sainsbury's "
-            "during the second half of the month. Footfall in grocery multiples dropped "
+            "Off-Trade is trending below expected pace in the grocery multiple channel "
+            "during the second half of the month. Footfall in key accounts dropped "
             "following adverse weather and competing promotions from rival lager brands."
         ),
     },

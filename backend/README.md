@@ -1,25 +1,23 @@
 # MarketPulse UK — Backend API
 
-FastAPI backend for the MarketPulse Action Center. Serves forecast data, gap analysis,
-recovery plans, what-if simulation and an LLM-powered director briefing via Groq.
+FastAPI backend serving forecast data, gap analysis, recovery plans,
+what-if simulation and an LLM-powered director briefing.
 
 ---
 
 ## Stack
 
 | Tool | Purpose |
-|------|---------|
-| FastAPI + Uvicorn | HTTP API framework |
+|---|---|
+| FastAPI + Uvicorn | HTTP API |
 | Pydantic v2 | Request/response validation |
-| Groq SDK | LLM briefing (llama-3.3-70b-versatile) |
-| pandas + openpyxl | Data loading (Pau's XGBoost pipeline) |
-| scikit-learn + xgboost | Forecast model (Pau) |
+| pandas | CSV data loading |
+| LightGBM | Forecast model (via analytics pipeline) |
+| Groq SDK | LLM briefing — **lazy import, optional** |
 
 ---
 
 ## Getting started
-
-### 1. Create virtual environment
 
 ```bash
 cd backend
@@ -27,116 +25,72 @@ python -m venv .venv
 
 # Windows
 .venv\Scripts\activate
+# macOS/Linux
+# source .venv/bin/activate
 
-# macOS / Linux
-source .venv/bin/activate
-```
-
-### 2. Install dependencies
-
-```bash
 pip install -r requirements.txt
-```
 
-### 3. Set up environment variables
-
-```bash
 cp .env.example .env
-# Edit .env and add your GROQ_API_KEY
-```
+# Optional: add GROQ_API_KEY for AI briefing
 
-Get a free API key at [console.groq.com](https://console.groq.com).
-
-### 4. Start the server
-
-```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
----
-
-## Verify it works
-
-- **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **Health check**: [http://localhost:8000/api/health](http://localhost:8000/api/health)
-
-### Test the briefing endpoint (requires GROQ_API_KEY)
-
-```bash
-curl -X POST http://localhost:8000/api/briefing \
-  -H "Content-Type: application/json" \
-  -d '{
-    "context": {
-      "month": "May 2026",
-      "salesToDate": 742000,
-      "monthlyTarget": 1200000,
-      "expectedGap": -120000,
-      "status": "At Risk",
-      "topGapDriver": "Off-Trade underperformance",
-      "recommendedAction": "Activate Balanced Recovery plan in Week 3"
-    }
-  }'
-```
-
-### Test the simulator endpoint
-
-```bash
-curl -X POST http://localhost:8000/api/simulate \
-  -H "Content-Type: application/json" \
-  -d '{
-    "intensity": "Medium",
-    "channel": "Off-Trade",
-    "brand": "Estrella Damm",
-    "week": "Week 3"
-  }'
-```
-
----
-
-## Integration with frontend
-
-- Frontend (Vite): `http://localhost:5173`
-- Backend (FastAPI): `http://localhost:8000`
-
-CORS is configured to allow all requests from `http://localhost:5173`.
-
-The frontend reads from `src/data/mockData.ts` by default. To switch to the real API,
-add `src/services/api.ts` and replace the imports in each section component.
-
----
-
-## For Pau — connecting your XGBoost model
-
-Only one file to modify: `app/services/forecast.py`
-
-The function signature must stay the same:
-```python
-def predict_forecast(horizon: int = 6, channel: Optional[str] = None) -> List[ForecastPoint]:
-```
-
-Steps:
-1. Save your trained model: `joblib.dump(model, "../data/processed/model.pkl")`
-2. Load it at module level in `forecast.py`
-3. Replace the mock return with your real predictions
-4. Return a list of `ForecastPoint` objects (schema is already imported)
-
-Do **not** touch `app/main.py` or any other file.
+The backend starts **without Groq** — the LLM import is lazy and falls back to a
+local template if the package is missing or the API key is not set.
 
 ---
 
 ## API endpoints
 
-| Method | Path | Status |
-|--------|------|--------|
-| GET | `/api/health` | ✅ Live |
-| GET | `/api/metrics` | 🟡 Stub |
-| GET | `/api/forecast` | 🟡 Stub (Pau replaces) |
-| GET | `/api/gap-drivers` | 🟡 Stub |
-| GET | `/api/demand-windows` | 🟡 Stub |
-| GET | `/api/action-plans` | 🟡 Stub |
-| POST | `/api/simulate` | ✅ Live (deterministic) |
-| POST | `/api/goal-seek` | 🟡 Stub |
-| GET | `/api/backtest` | 🟡 Stub |
-| POST | `/api/briefing` | ✅ Live (Groq LLM) |
+| Method | Path | Data source |
+|---|---|---|
+| GET | `/api/health` | — |
+| GET | `/api/forecast` | forecast_weekly.csv → LightGBM live → mock |
+| GET | `/api/metrics` | forecast_weekly.csv → mock |
+| GET | `/api/gap-drivers` | mock (calibrated values from real data) |
+| GET | `/api/demand-windows` | mock |
+| GET | `/api/action-plans` | mock (calibrated from gap drivers + simulator) |
+| POST | `/api/simulate` | calibrated_multipliers.json |
+| POST | `/api/goal-seek` | derived from action plans |
+| GET | `/api/backtest` | model_metrics.json → mock |
+| POST | `/api/briefing` | Groq LLM → local fallback |
+| POST | `/api/explain-plan` | Groq LLM → local fallback |
 
-Full contract: see `../docs/API_CONTRACT.md`
+Interactive docs: http://localhost:8000/docs
+
+---
+
+## Groq (LLM) fallback
+
+The `/api/briefing` and `/api/explain-plan` endpoints **never return 503**.
+If `GROQ_API_KEY` is missing, the groq package is not installed, or the API call fails,
+the service returns a 200 response with `model: "fallback-local"` and a pre-built template.
+
+---
+
+## Data files required (gitignored)
+
+```
+data/
+├── UK DATA.xlsx                       ← source sales data
+├── Damm Trade Plan - promotions.xlsx  ← 2026 promo plan
+├── weekly_features.csv                ← merged feature matrix
+└── processed/
+    ├── forecast_weekly.csv            ← pipeline output (Hl by segment)
+    ├── model_metrics.json             ← MAPE/WAPE per segment
+    └── calibrated_multipliers.json    ← promo uplift multipliers
+```
+
+Regenerate with: `python -m analytics.run_pipeline` (from project root).
+
+---
+
+## Smoke test
+
+```bash
+cd backend
+python -m pytest tests/test_smoke.py -v
+```
+
+Tests that the app imports cleanly, health check responds, and key endpoints return data.
