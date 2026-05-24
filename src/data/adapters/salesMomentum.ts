@@ -320,29 +320,49 @@ export function adaptSnapshotToSalesMomentum(
   return buildSalesMomentum(normalised, options);
 }
 
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
 /**
  * Convert the live `/api/forecast` response (already £-denominated) into the
- * frontend's {@link SalesMomentumData} contract. The API ships daily- or
- * weekly-labelled points; we treat each as a single bucket and reuse the same
- * aggregation as the snapshot adapter.
+ * frontend's {@link SalesMomentumData} contract.
+ *
+ * The API uses display-friendly labels like "May 04" rather than ISO dates,
+ * so we don't try to parse them — we synthesise chronological dates anchored
+ * on "today": the last historical point becomes the current week, with each
+ * neighbour ±7 days from there. That keeps month/quarter/year bucketing
+ * meaningful regardless of which window the backend returns.
  */
 export function adaptApiForecastToSalesMomentum(
   series: BackendForecastPoint[],
   options: BuildOptions = {},
 ): SalesMomentumData {
-  const normalised: NormalisedPoint[] = series
-    .map((point) => {
-      // The API uses display-friendly labels like "May 01" rather than ISO
-      // dates. Fall back to parsing what's there and pivot off the order the
-      // backend returns if parsing fails.
-      const parsed = parseDate(point.date);
-      return {
-        date: Number.isNaN(parsed.getTime()) ? new Date() : parsed,
-        isHistorical: typeof point.actual === 'number',
-        actualGbp: typeof point.actual === 'number' ? point.actual : null,
-        forecastGbp: typeof point.forecast === 'number' ? point.forecast : null,
-      } satisfies NormalisedPoint;
-    });
+  if (series.length === 0) {
+    return buildSalesMomentum([], options);
+  }
+
+  // Pivot on the last historical row; default to the last point if the API
+  // returned only forecasts.
+  let pivotIndex = -1;
+  for (let i = series.length - 1; i >= 0; i -= 1) {
+    if (typeof series[i].actual === 'number') {
+      pivotIndex = i;
+      break;
+    }
+  }
+  if (pivotIndex < 0) {
+    pivotIndex = series.length - 1;
+  }
+
+  const anchor = new Date();
+  anchor.setUTCHours(0, 0, 0, 0);
+  const anchorTime = anchor.getTime();
+
+  const normalised: NormalisedPoint[] = series.map((point, i) => ({
+    date: new Date(anchorTime + (i - pivotIndex) * WEEK_MS),
+    isHistorical: typeof point.actual === 'number',
+    actualGbp: typeof point.actual === 'number' ? point.actual : null,
+    forecastGbp: typeof point.forecast === 'number' ? point.forecast : null,
+  }));
 
   return buildSalesMomentum(normalised, options);
 }

@@ -13,18 +13,70 @@
 | Recharts | Charts |
 | lucide-react | Icons |
 
-No backend. All data is mock and centralised in `src/data/mockData.ts`.
+The Vite frontend talks to an optional FastAPI backend (`backend/`) that
+serves the LightGBM forecast produced by the analytics pipeline (`analytics/`).
+A pre-baked snapshot (`public/forecast_results.json`) and a bundled mock keep
+the UI working when Python is not available.
 
 ---
 
 ## Getting started
+
+### Frontend only (snapshot or mock)
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173)
+Open [http://localhost:5173](http://localhost:5173). With no backend running
+the dashboard reads `public/forecast_results.json` (analytics snapshot). If
+that file is missing too, it falls back to the bundled mock in
+`src/data/mockData.ts` — the UI never breaks offline.
+
+### Full stack (live forecast)
+
+In one terminal, start the FastAPI service:
+
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate           # Windows (use `source .venv/bin/activate` on macOS/Linux)
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+In another, start the frontend:
+
+```bash
+pnpm install
+pnpm dev
+```
+
+The Vite dev server proxies `/api/*` → `http://localhost:8000` (see
+`vite.config.ts`), so the app calls `/api/forecast` without CORS friction.
+
+Copy `.env.example` to `.env.local` if you want to point the gateway at a
+remote backend or change the forecast horizon:
+
+```bash
+VITE_API_BASE_URL=http://api.example.com   # leave empty to use the dev proxy
+VITE_FORECAST_HORIZON=12                   # weeks requested from /api/forecast
+```
+
+### Integration boundary
+
+Backend payloads never reach UI components directly. The flow is:
+
+```
+FastAPI /api/forecast  ─┐
+                        ├─►  src/data/adapters/  ─►  SalesMomentumData  ─►  components
+public/forecast_results.json ─┘                       (stable frontend contract)
+src/data/mockData.ts (fallback) ────────────────────────────────────────►  components
+```
+
+`src/data/gateway/marketPulseGateway.ts` picks the best available source
+(API → snapshot → mock) and tags the result with `source: 'api' | 'snapshot' | 'mock'`.
 
 ---
 

@@ -301,36 +301,26 @@ def explain_plan(req: schemas.ExplainPlanRequest):
     """
     Recibe el plan de acción seleccionado y genera una explicación en español
     sencillo que cualquier persona del equipo comercial pueda entender.
-    Usa Groq (llama-3.3-70b-versatile). Requiere GROQ_API_KEY en backend/.env.
+    Usa Groq (llama-3.3-70b-versatile) si está disponible; si no, devuelve
+    un fallback local útil (nunca rompe la demo).
     """
-    try:
-        result = briefing.explain_action_plan(req)
-        return schemas.BriefingResponse(**result)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail=f"Servicio de explicación no disponible: {exc}") from exc
+    result = briefing.explain_action_plan(req)
+    return schemas.BriefingResponse(**result)
 
 
-# ─── Briefing (LLM — NOT a stub) ─────────────────────────────────────────────
+# ─── Briefing (LLM with local fallback) ──────────────────────────────────────
 
 @app.post(
     "/api/briefing",
     response_model=schemas.BriefingResponse,
     tags=["Intelligence"],
-    summary="Generate Director's Briefing via Groq LLM",
+    summary="Generate Director's Briefing (Groq LLM or local fallback)",
 )
 def post_briefing(req: schemas.BriefingRequest):
     """
-    Calls Groq (llama-3.3-70b-versatile) to generate a concise,
-    actionable director-level briefing based on the provided context.
-
-    Requires GROQ_API_KEY in backend/.env.
-    Returns 503 if the LLM service is unavailable.
+    Calls Groq (llama-3.3-70b-versatile) when available; otherwise returns a
+    useful local fallback. Never returns 503 — the demo always gets a briefing.
+    Requires GROQ_API_KEY in backend/.env for the AI-generated version.
     """
-    try:
-        result = briefing.generate_briefing(req.context)
-        return schemas.BriefingResponse(**result)
-    except RuntimeError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Briefing service unavailable: {exc}",
-        ) from exc
+    result = briefing.generate_briefing(req.context)
+    return schemas.BriefingResponse(**result)
