@@ -1,16 +1,20 @@
-import { useState } from 'react';
-import { FlaskConical, ArrowRight } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { FlaskConical, ArrowRight, Wifi, WifiOff } from 'lucide-react';
 import { simulatorOptions } from '../../data/mockData';
 import { simulate, getScenarioExplanation } from '../../utils/simulator';
+import { runSimulate } from '../../services/marketPulseApi';
 import { formatCurrency } from '../../utils/formatters';
 import SectionHeader from '../common/SectionHeader';
 import StatusBadge from '../common/StatusBadge';
 import ProgressBar from '../common/ProgressBar';
 import InsightCard from '../common/InsightCard';
-import type { PromoIntensity, Channel, Brand, Week, Tone } from '../../types';
+import type { PromoIntensity, Channel, Brand, Week, Tone, SimulatorResult } from '../../types';
 import { useTargetPlan } from '../../context/TargetContext';
+import {
+  DEMO_BASELINE_FORECAST_GBP,
+} from '../../config/demoConfig';
 
-const baselineForecast = 1080000;
+const BASE_PROBABILITY = 34;
 
 function OptionButton<T extends string>({
   value,
@@ -47,14 +51,48 @@ export default function WhatIfSimulator() {
   const [brand,     setBrand]     = useState<Brand>('Estrella Damm');
   const [week,      setWeek]      = useState<Week>('Week 3');
 
-  const result = simulate(intensity, channel, brand, week, currentMonthTarget, baselineForecast);
-  const explanation = getScenarioExplanation(channel, week, brand, result);
+  // Compute local result immediately (synced multipliers → same as API)
+  const localResult = simulate(intensity, channel, brand, week, currentMonthTarget, DEMO_BASELINE_FORECAST_GBP);
+  const [result, setResult] = useState<SimulatorResult>(localResult);
+  const [apiSource, setApiSource] = useState<'api' | 'local'>('local');
+  const [apiExplanation, setApiExplanation] = useState<string | null>(null);
+
+  // Debounce API call by 400 ms to avoid flooding on rapid clicks
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    // Always show local result immediately
+    const local = simulate(intensity, channel, brand, week, currentMonthTarget, DEMO_BASELINE_FORECAST_GBP);
+    setResult(local);
+    setApiExplanation(null);
+
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(async () => {
+      const api = await runSimulate({ intensity, channel, brand, week });
+      if (api) {
+        setResult({
+          newForecast: api.newForecast,
+          remainingGap: api.remainingGap,
+          hitProbability: api.hitProbability,
+          incrementalImpact: api.incrementalImpact,
+        });
+        setApiExplanation(api.explanation);
+        setApiSource('api');
+      } else {
+        setApiSource('local');
+      }
+    }, 400);
+
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [intensity, channel, brand, week, currentMonthTarget]);
+
+  const localExplanation = getScenarioExplanation(channel, week, brand, result);
+  const explanation = apiExplanation ?? localExplanation;
 
   const gapTone: Tone = result.remainingGap >= 0 ? 'success' : result.remainingGap > -40000 ? 'warning' : 'danger';
   const probTone: Tone = result.hitProbability >= 70 ? 'success' : result.hitProbability >= 50 ? 'warning' : 'danger';
-
-  const delta = result.newForecast - baselineForecast;
-  const probDelta = result.hitProbability - 34;
+  const delta = result.newForecast - DEMO_BASELINE_FORECAST_GBP;
+  const probDelta = result.hitProbability - BASE_PROBABILITY;
 
   return (
     <div className="space-y-6">
@@ -69,65 +107,51 @@ export default function WhatIfSimulator() {
           <div className="flex items-center gap-2 mb-1">
             <FlaskConical size={16} className="text-ink-500" />
             <p className="text-[13px] font-semibold text-ink-900">Scenario inputs</p>
+            <div className="ml-auto flex items-center gap-1">
+              {apiSource === 'api' ? (
+                <><Wifi size={11} className="text-success" /><span className="text-[9px] text-success font-semibold">API</span></>
+              ) : (
+                <><WifiOff size={11} className="text-ink-400" /><span className="text-[9px] text-ink-400 font-semibold">Local</span></>
+              )}
+            </div>
           </div>
 
-          {/* Intensity */}
           <div>
-            <p className="text-[11px] font-semibold text-ink-500 uppercase tracking-wide mb-2">
-              Promotion intensity
-            </p>
+            <p className="text-[11px] font-semibold text-ink-500 uppercase tracking-wide mb-2">Promotion intensity</p>
             <div className="flex gap-2 flex-wrap">
               {simulatorOptions.intensities.map((opt) => (
-                <OptionButton key={opt} value={opt} selected={intensity} onClick={setIntensity}>
-                  {opt}
-                </OptionButton>
+                <OptionButton key={opt} value={opt} selected={intensity} onClick={setIntensity}>{opt}</OptionButton>
               ))}
             </div>
           </div>
 
-          {/* Channel */}
           <div>
-            <p className="text-[11px] font-semibold text-ink-500 uppercase tracking-wide mb-2">
-              Channel focus
-            </p>
+            <p className="text-[11px] font-semibold text-ink-500 uppercase tracking-wide mb-2">Channel focus</p>
             <div className="flex gap-2 flex-wrap">
               {simulatorOptions.channels.map((opt) => (
-                <OptionButton key={opt} value={opt} selected={channel} onClick={setChannel}>
-                  {opt}
-                </OptionButton>
+                <OptionButton key={opt} value={opt} selected={channel} onClick={setChannel}>{opt}</OptionButton>
               ))}
             </div>
           </div>
 
-          {/* Brand */}
           <div>
-            <p className="text-[11px] font-semibold text-ink-500 uppercase tracking-wide mb-2">
-              Brand focus
-            </p>
+            <p className="text-[11px] font-semibold text-ink-500 uppercase tracking-wide mb-2">Brand focus</p>
             <div className="flex gap-2 flex-wrap">
               {simulatorOptions.brands.map((opt) => (
-                <OptionButton key={opt} value={opt} selected={brand} onClick={setBrand}>
-                  {opt}
-                </OptionButton>
+                <OptionButton key={opt} value={opt} selected={brand} onClick={setBrand}>{opt}</OptionButton>
               ))}
             </div>
           </div>
 
-          {/* Week */}
           <div>
-            <p className="text-[11px] font-semibold text-ink-500 uppercase tracking-wide mb-2">
-              Activation week
-            </p>
+            <p className="text-[11px] font-semibold text-ink-500 uppercase tracking-wide mb-2">Activation week</p>
             <div className="flex gap-2 flex-wrap">
               {simulatorOptions.weeks.map((opt) => (
-                <OptionButton key={opt} value={opt} selected={week} onClick={setWeek}>
-                  {opt}
-                </OptionButton>
+                <OptionButton key={opt} value={opt} selected={week} onClick={setWeek}>{opt}</OptionButton>
               ))}
             </div>
           </div>
 
-          {/* Scenario summary */}
           <div className="pt-4 border-t border-ink-100">
             <div className="flex items-center gap-2 text-[12px] text-ink-500 flex-wrap">
               <span className="bg-ink-100 px-2 py-0.5 rounded font-medium text-ink-700">{intensity}</span>
@@ -143,7 +167,6 @@ export default function WhatIfSimulator() {
 
         {/* Results panel */}
         <div className="space-y-3">
-          {/* Main forecast */}
           <div className="bg-white rounded-2xl border border-ink-300/60 shadow-card px-6 py-5">
             <p className="text-[11px] font-semibold text-ink-500 uppercase tracking-wide mb-1">Simulated forecast</p>
             <div className="flex items-end gap-3">
@@ -157,7 +180,9 @@ export default function WhatIfSimulator() {
             <div className="mt-3">
               <div className="flex justify-between text-[11px] mb-1">
                 <span className="text-ink-500">vs target of {formatCurrency(currentMonthTarget, true)}</span>
-                <span className="font-semibold text-ink-700">{((result.newForecast / currentMonthTarget) * 100).toFixed(0)}%</span>
+                <span className="font-semibold text-ink-700">
+                  {((result.newForecast / currentMonthTarget) * 100).toFixed(0)}%
+                </span>
               </div>
               <ProgressBar
                 value={result.newForecast}
@@ -167,7 +192,6 @@ export default function WhatIfSimulator() {
             </div>
           </div>
 
-          {/* Gap */}
           <div className="bg-white rounded-2xl border border-ink-300/60 shadow-card px-6 py-4">
             <div className="flex justify-between items-center">
               <div>
@@ -186,7 +210,6 @@ export default function WhatIfSimulator() {
             </div>
           </div>
 
-          {/* Hit probability */}
           <div className="bg-white rounded-2xl border border-ink-300/60 shadow-card px-6 py-4">
             <div className="flex justify-between items-end">
               <div>
@@ -195,7 +218,7 @@ export default function WhatIfSimulator() {
                   {result.hitProbability}%
                 </p>
                 <p className="text-[11px] text-ink-400 mt-0.5">
-                  {probDelta >= 0 ? '+' : ''}{probDelta.toFixed(0)}pp vs baseline (34%)
+                  {probDelta >= 0 ? '+' : ''}{probDelta.toFixed(0)}pp vs baseline ({BASE_PROBABILITY}%)
                 </p>
               </div>
               <div className="w-24">
@@ -204,16 +227,16 @@ export default function WhatIfSimulator() {
             </div>
           </div>
 
-          {/* Incremental impact */}
           <div className="bg-white rounded-2xl border border-ink-300/60 shadow-card px-6 py-4">
             <p className="text-[11px] font-semibold text-ink-500 uppercase tracking-wide mb-1">Expected incremental impact</p>
             <p className="text-[22px] font-bold text-success">+{formatCurrency(result.incrementalImpact, true)}</p>
-            <p className="text-[11px] text-ink-400 mt-0.5">vs baseline forecast of {formatCurrency(baselineForecast, true)}</p>
+            <p className="text-[11px] text-ink-400 mt-0.5">
+              vs baseline forecast of {formatCurrency(DEMO_BASELINE_FORECAST_GBP, true)}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Dynamic explanation */}
       <InsightCard title="Scenario explanation" tone={result.remainingGap >= 0 ? 'success' : 'warning'}>
         {explanation}
       </InsightCard>
@@ -234,9 +257,9 @@ export default function WhatIfSimulator() {
             <tbody className="divide-y divide-ink-100">
               <tr>
                 <td className="py-2.5 text-ink-500">Baseline (no action)</td>
-                <td className="py-2.5 text-right font-medium text-ink-900">£1.08M</td>
+                <td className="py-2.5 text-right font-medium text-ink-900">{formatCurrency(DEMO_BASELINE_FORECAST_GBP, true)}</td>
                 <td className="py-2.5 text-right font-semibold text-danger">-£120k</td>
-                <td className="py-2.5 text-right font-medium text-ink-700">34%</td>
+                <td className="py-2.5 text-right font-medium text-ink-700">{BASE_PROBABILITY}%</td>
               </tr>
               <tr>
                 <td className="py-2.5 text-ink-700 font-medium">Balanced Recovery (recommended)</td>
@@ -245,9 +268,11 @@ export default function WhatIfSimulator() {
                 <td className="py-2.5 text-right font-medium text-success">74%</td>
               </tr>
               <tr className="bg-ink-50/50">
-                <td className="py-2.5 text-ink-900 font-semibold flex items-center gap-1.5">
-                  <FlaskConical size={12} className="text-ink-500" />
-                  This scenario
+                <td className="py-2.5 text-ink-900 font-semibold">
+                  <span className="flex items-center gap-1.5">
+                    <FlaskConical size={12} className="text-ink-500" />
+                    This scenario
+                  </span>
                 </td>
                 <td className="py-2.5 text-right font-bold text-ink-900">{formatCurrency(result.newForecast, true)}</td>
                 <td className={`py-2.5 text-right font-bold ${result.remainingGap >= 0 ? 'text-success' : 'text-warning'}`}>

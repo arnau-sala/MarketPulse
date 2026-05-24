@@ -1,14 +1,16 @@
-import { demandWindows } from '../../data/mockData';
+import { useEffect, useState } from 'react';
+import { fetchDemandWindows } from '../../services/marketPulseApi';
+import type { DataSource } from '../../services/marketPulseApi';
 import SectionHeader from '../common/SectionHeader';
 import InsightCard from '../common/InsightCard';
 import StatusBadge from '../common/StatusBadge';
 import OpportunityChart from '../charts/OpportunityChart';
-import type { Tone } from '../../types';
+import type { DemandWindow, Tone } from '../../types';
 
 const recommendationTone: Record<string, Tone> = {
-  Maintain:       'neutral',
-  Monitor:        'neutral',
-  Activate:       'success',
+  Maintain:        'neutral',
+  Monitor:         'neutral',
+  Activate:        'success',
   'Tactical Push': 'warning',
 };
 
@@ -30,14 +32,52 @@ const scoreBg = (score: number): string => {
   return 'bg-ink-300';
 };
 
+function SourceBadge({ source }: { source: DataSource }) {
+  return (
+    <span className={`inline-flex items-center text-[9px] font-semibold px-1.5 py-0.5 rounded-full border ${
+      source === 'api'
+        ? 'bg-success-light text-success border-success/20'
+        : 'bg-ink-100 text-ink-500 border-ink-200'
+    }`}>
+      {source === 'api' ? 'Live API' : 'Demo data'}
+    </span>
+  );
+}
+
 export default function DemandWindows() {
-  const best = demandWindows.find((w) => w.opportunityScore === Math.max(...demandWindows.map((x) => x.opportunityScore)));
+  const [windows, setWindows] = useState<DemandWindow[]>([]);
+  const [source, setSource] = useState<DataSource>('mock');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDemandWindows().then(({ data, source: s }) => {
+      setWindows(data);
+      setSource(s);
+      setLoading(false);
+    });
+  }, []);
+
+  const best = windows.reduce<DemandWindow | undefined>(
+    (top, w) => (!top || w.opportunityScore > top.opportunityScore ? w : top),
+    undefined,
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader title="When should we act?" description="Identifying the best weekly demand windows for commercial activation." />
+        <div className="animate-pulse space-y-3">
+          {[1, 2].map((i) => <div key={i} className="h-28 bg-ink-100 rounded-2xl" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <SectionHeader
         title="When should we act?"
-        description="The best week is not always the week with the highest demand. MarketPulse identifies where commercial action can create the highest incremental impact."
+        description="The best week is not always the one with the highest demand. MarketPulse identifies where commercial action creates the highest incremental impact."
       />
 
       {/* Best window highlight */}
@@ -46,6 +86,7 @@ export default function DemandWindows() {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[11px] font-bold text-success uppercase tracking-widest">★ Best action window</span>
+              <SourceBadge source={source} />
             </div>
             <p className="text-[18px] font-bold text-ink-900">{best.week}</p>
             <p className="text-[13px] text-ink-600 mt-1">{best.explanation}</p>
@@ -59,7 +100,7 @@ export default function DemandWindows() {
 
       {/* Week cards grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {demandWindows.map((w, i) => {
+        {windows.map((w, i) => {
           const isBest = w.week === best?.week;
           return (
             <div
@@ -82,7 +123,6 @@ export default function DemandWindows() {
                 </div>
               </div>
 
-              {/* Score */}
               <div className="text-center py-1">
                 <p className={`text-[40px] font-bold leading-none ${scoreColor(w.opportunityScore)}`}>
                   {w.opportunityScore}
@@ -96,7 +136,6 @@ export default function DemandWindows() {
                 </div>
               </div>
 
-              {/* Metrics */}
               <div className="space-y-1.5 border-t border-ink-100 pt-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-ink-500">Baseline demand</span>
@@ -126,7 +165,6 @@ export default function DemandWindows() {
         <OpportunityChart />
       </div>
 
-      {/* Insight */}
       <InsightCard title="Timing insight" tone="success">
         <strong>Week 3 combines high demand, high promotional sensitivity and enough lead-time</strong> to
         affect the monthly closing forecast. It is the strongest and most reliable window for
