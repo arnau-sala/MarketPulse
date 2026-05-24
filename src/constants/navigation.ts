@@ -3,6 +3,8 @@ export type SectionId =
   | 'gap'
   | 'demand'
   | 'action'
+  | 'targets'
+  | 'historical'
   | 'simulator';
 
 export interface NavItem {
@@ -36,6 +38,18 @@ export const navItems: NavItem[] = [
     label: 'Action Planner',
     description: 'Recovery plans ranked by ROI',
     question: 'What should we do now?',
+  },
+  {
+    id: 'targets',
+    label: 'Target Planning',
+    description: 'Editable monthly targets',
+    question: 'How should we set the monthly targets?',
+  },
+  {
+    id: 'historical',
+    label: 'Historical Data',
+    description: 'Net profit by year',
+    question: 'How has net profit evolved?',
   },
   {
     id: 'simulator',

@@ -66,6 +66,8 @@ export const netProfitHistory: NetProfitHistoryYear[] = [
  */
 export const TARGET_BASELINE_YEAR = 2025;
 
+export const TARGET_PLANNING_YEAR = 2026;
+
 /**
  * Years used as the baseline window for computing default targets.
  * Last three full historical years (excluding the in-progress current year).
@@ -100,4 +102,12 @@ export function getMonthlyNetProfitAverage(monthNumber: number): number {
  */
 export function computeDefaultMonthlyTarget(baselineAverage: number): number {
   return Math.round((baselineAverage * (1 + TARGET_UPLIFT_PCT)) / 10000) * 10000;
+}
+
+export function getNetProfitYear(year: number): NetProfitHistoryYear | undefined {
+  return netProfitHistory.find((block) => block.year === year);
+}
+
+export function getMonthlyNetProfit(year: number, monthNumber: number): number | undefined {
+  return getNetProfitYear(year)?.months.find((month) => month.monthNumber === monthNumber)?.netProfitGbp;
 }

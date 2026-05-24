@@ -434,7 +434,7 @@ export default function SalesMomentumChart() {
                     />
                   )}
                   <Area
-                    type="monotone"
+                    type="linear"
                     dataKey="noActionForecast"
                     name="No-action forecast"
                     stackId="fork"
@@ -453,7 +453,7 @@ export default function SalesMomentumChart() {
                     connectNulls={false}
                   />
                   <Area
-                    type="monotone"
+                    type="linear"
                     dataKey="forecastGap"
                     name="Forecast uplift"
                     stackId="fork"
@@ -474,7 +474,7 @@ export default function SalesMomentumChart() {
                   {lineLabels.map((line) => (
                     <Line
                       key={line.key}
-                      type="monotone"
+                      type="linear"
                       dataKey={line.key}
                       name={line.label}
                       isAnimationActive={chartAnimationActive}

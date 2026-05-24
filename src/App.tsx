@@ -4,34 +4,41 @@ import ExecutivePulse from './components/sections/ExecutivePulse';
 import GapDiagnosis from './components/sections/GapDiagnosis';
 import DemandWindows from './components/sections/DemandWindows';
 import ActionPlanner from './components/sections/ActionPlanner';
+import TargetPlanning from './components/sections/TargetPlanning';
+import HistoricalData from './components/sections/HistoricalData';
 import WhatIfSimulator from './components/sections/WhatIfSimulator';
 import { navItems } from './constants/navigation';
 import type { SectionId } from './constants/navigation';
 import { Menu } from 'lucide-react';
 import { TargetProvider } from './context/TargetContext';
 import { AppUIProvider } from './context/AppUIContext';
+import { TARGET_BASELINE_YEAR } from './data/profitHistory';
 
 const sectionMap: Record<SectionId, React.ReactNode> = {
   executive: <ExecutivePulse />,
   gap: <GapDiagnosis />,
   demand: <DemandWindows />,
   action: <ActionPlanner />,
+  targets: <TargetPlanning />,
+  historical: <HistoricalData />,
   simulator: <WhatIfSimulator />,
 };
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<SectionId>('executive');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [historicalYear, setHistoricalYear] = useState(TARGET_BASELINE_YEAR);
 
-  const openHistoricalData = useCallback(() => {
-    setActiveSection('gap');
+  const openHistoricalData = useCallback((year: number = TARGET_BASELINE_YEAR) => {
+    setHistoricalYear(year);
+    setActiveSection('historical');
   }, []);
 
   return (
     <TargetProvider>
       <AppUIProvider
-        historicalYear={2025}
-        setHistoricalYear={() => undefined}
+        historicalYear={historicalYear}
+        setHistoricalYear={setHistoricalYear}
         openHistoricalData={openHistoricalData}
         setActiveSection={setActiveSection}
       >

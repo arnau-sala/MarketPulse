@@ -8,34 +8,111 @@ import type {
   SalesMomentumPeriod,
   SalesMomentumPoint,
 } from '../../types';
+import { netProfitHistory } from '../profitHistory';
 
 /**
  * Conversion fallback used when the analytics snapshot has volumes in
- * hectoliters but no `revenuePerHlGbp` meta. Matches the backend default
- * in `backend/app/services/forecast.py`.
+ * hectoliters but no `revenuePerHlGbp` meta and no historical calibration.
  */
-const DEFAULT_REVENUE_PER_HL_GBP = 228;
+const DEFAULT_REVENUE_PER_HL_GBP = 44;
 
 /**
- * Multiplier applied to no-action forecasts to produce a placeholder
- * "recommended plan" curve. Replace once the planner endpoint is wired.
+ * Multiplier applied to no-action forecast increments to produce a placeholder
+ * "recommended plan" curve. API-provided action forecasts take precedence.
  */
 const RECOMMENDED_PLAN_UPLIFT = 1.08;
 
 interface NormalisedPoint {
-  /** ISO date (YYYY-MM-DD) at the start of the weekly bucket. */
   date: Date;
-  /** True when the row represents a realised week (actuals known). */
   isHistorical: boolean;
-  /** Realised revenue (£), or null for future buckets. */
   actualGbp: number | null;
-  /** Model forecast (£), or null for historical buckets. */
   forecastGbp: number | null;
+  recommendedGbp: number | null;
+}
+
+interface TimelinePoint {
+  label: string;
+  actualSales: number | null;
+  noActionForecast: number | null;
+  recommendedForecast: number | null;
+  today?: boolean;
+}
+
+interface Bucket {
+  key: string;
+  label: string;
+  sortIndex: number;
+  actualGbp: number | null;
+  forecastGbp: number | null;
+  recommendedGbp: number | null;
+  hasHistorical: boolean;
+  hasForecast: boolean;
 }
 
 function parseDate(value: string): Date {
   const date = new Date(`${value}T00:00:00Z`);
   return Number.isNaN(date.getTime()) ? new Date(NaN) : date;
+}
+
+function monthKey(date: Date): string {
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  return `${date.getUTCFullYear()}-${month}`;
+}
+
+function deriveRevenuePerHl(payload: BackendWeeklyForecastPayload): number {
+  if (typeof payload.meta?.revenuePerHlGbp === 'number') {
+    return payload.meta.revenuePerHlGbp;
+  }
+
+  const profitByMonth = new Map<string, number>();
+  for (const year of netProfitHistory) {
+    for (const month of year.months) {
+      profitByMonth.set(`${year.year}-${String(month.monthNumber).padStart(2, '0')}`, month.netProfitGbp);
+    }
+  }
+
+  const volumeByMonth = new Map<string, number>();
+  for (const row of payload.series) {
+    if (row.tipo !== 'historico' || typeof row.venta_real_historica !== 'number') {
+      continue;
+    }
+
+    const date = parseDate(row.fecha);
+    if (Number.isNaN(date.getTime())) {
+      continue;
+    }
+
+    const key = monthKey(date);
+    volumeByMonth.set(key, (volumeByMonth.get(key) ?? 0) + row.venta_real_historica);
+  }
+
+  let totalProfit = 0;
+  let totalVolume = 0;
+  for (const [key, volume] of volumeByMonth) {
+    const profit = profitByMonth.get(key);
+    if (typeof profit === 'number' && volume > 0) {
+      totalProfit += profit;
+      totalVolume += volume;
+    }
+  }
+
+  return totalVolume > 0 ? totalProfit / totalVolume : DEFAULT_REVENUE_PER_HL_GBP;
+}
+
+function parseApiForecastDate(value: string, fallback: Date): Date {
+  const match = /^([A-Za-z]{3})\s+(\d{1,2})$/.exec(value.trim());
+  if (!match) {
+    return fallback;
+  }
+
+  const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    .findIndex((label) => label.toLowerCase() === match[1].toLowerCase());
+  if (month < 0) {
+    return fallback;
+  }
+
+  const year = new Date().getUTCFullYear();
+  return new Date(Date.UTC(year, month, Number(match[2])));
 }
 
 function formatWeekLabel(date: Date): string {
@@ -59,10 +136,14 @@ function buildEmptyPeriod(target: number): SalesMomentumPeriod {
   return { target, points: [] };
 }
 
-function applyPlanUplift(noActionForecast: number | null): number | null {
-  return typeof noActionForecast === 'number'
-    ? Math.round(noActionForecast * RECOMMENDED_PLAN_UPLIFT)
+function applyPlanUplift(noActionIncrement: number | null): number | null {
+  return typeof noActionIncrement === 'number'
+    ? Math.round(noActionIncrement * RECOMMENDED_PLAN_UPLIFT)
     : null;
+}
+
+function positiveValue(value: number | null | undefined): number {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, value) : 0;
 }
 
 function takeRecent<T>(items: T[], maxBefore: number, maxAfter: number, pivotIndex: number): T[] {
@@ -71,35 +152,74 @@ function takeRecent<T>(items: T[], maxBefore: number, maxAfter: number, pivotInd
   return items.slice(start, end);
 }
 
-function pickPivotIndex(points: NormalisedPoint[]): number {
-  // Pivot on the most recent historical week — that is "today" for the chart.
-  for (let i = points.length - 1; i >= 0; i -= 1) {
-    if (points[i].isHistorical) {
-      return i;
-    }
-  }
-  return points.length > 0 ? points.length - 1 : 0;
+function toMomentumPoint(point: TimelinePoint, target: number): SalesMomentumPoint {
+  return {
+    period: point.label,
+    actualSales: point.actualSales,
+    noActionForecast: point.noActionForecast,
+    recommendedForecast: point.recommendedForecast,
+    target,
+    ...(point.today ? { today: true } : {}),
+  };
 }
 
-function toMomentumPoint(
-  period: string,
-  actualGbp: number | null,
-  noActionForecast: number | null,
-  target: number,
-  isToday: boolean,
-): SalesMomentumPoint {
-  const recommended = applyPlanUplift(noActionForecast);
-  const point: SalesMomentumPoint = {
-    period,
-    actualSales: actualGbp,
-    noActionForecast,
-    recommendedForecast: recommended,
-    target,
-  };
-  if (isToday) {
-    point.today = true;
+function markToday(points: TimelinePoint[]): TimelinePoint[] {
+  let todayIndex = -1;
+
+  for (let i = points.length - 1; i >= 0; i -= 1) {
+    if (typeof points[i].actualSales === 'number') {
+      todayIndex = i;
+      break;
+    }
   }
-  return point;
+
+  return points.map((point, index) => {
+    if (index !== todayIndex) {
+      return { ...point, today: false };
+    }
+
+    return {
+      ...point,
+      today: true,
+      noActionForecast: point.actualSales,
+      recommendedForecast: point.actualSales,
+    };
+  });
+}
+
+function buildWeeklyTimeline(points: NormalisedPoint[]): TimelinePoint[] {
+  let actualCumulative = 0;
+  let noActionCumulative = 0;
+  let recommendedCumulative = 0;
+
+  const timeline = points.map((point) => {
+    if (point.isHistorical) {
+      actualCumulative += positiveValue(point.actualGbp);
+      noActionCumulative = actualCumulative;
+      recommendedCumulative = actualCumulative;
+
+      return {
+        label: formatWeekLabel(point.date),
+        actualSales: Math.round(actualCumulative),
+        noActionForecast: null,
+        recommendedForecast: null,
+      };
+    }
+
+    const forecastIncrement = positiveValue(point.forecastGbp);
+    const recommendedIncrement = positiveValue(point.recommendedGbp ?? applyPlanUplift(forecastIncrement));
+    noActionCumulative += forecastIncrement;
+    recommendedCumulative += recommendedIncrement;
+
+    return {
+      label: formatWeekLabel(point.date),
+      actualSales: null,
+      noActionForecast: Math.round(noActionCumulative),
+      recommendedForecast: Math.round(recommendedCumulative),
+    };
+  });
+
+  return markToday(timeline);
 }
 
 function buildWeekly(points: NormalisedPoint[], target: number): SalesMomentumPeriod {
@@ -107,43 +227,27 @@ function buildWeekly(points: NormalisedPoint[], target: number): SalesMomentumPe
     return buildEmptyPeriod(target);
   }
 
-  const pivot = pickPivotIndex(points);
-  const window = takeRecent(points, 3, 4, pivot);
+  let pivot = -1;
+  for (let i = points.length - 1; i >= 0; i -= 1) {
+    if (points[i].isHistorical) {
+      pivot = i;
+      break;
+    }
+  }
+
+  const windowPoints = takeRecent(points, 3, 4, pivot >= 0 ? pivot : points.length - 1);
+  const timeline = buildWeeklyTimeline(windowPoints);
 
   return {
     target,
-    points: window.map((point) => {
-      const isToday = point === points[pivot];
-      // For the "today" bucket we keep both actual + forecast values aligned,
-      // so the recommended/no-action curves originate from the realised value.
-      const noAction = isToday
-        ? point.actualGbp ?? point.forecastGbp
-        : point.isHistorical
-          ? null
-          : point.forecastGbp;
-      return toMomentumPoint(
-        formatWeekLabel(point.date),
-        point.actualGbp,
-        noAction,
-        target,
-        isToday,
-      );
-    }),
+    points: timeline.map((point) => toMomentumPoint(point, target)),
   };
 }
 
 function aggregate<TBucket>(
   points: NormalisedPoint[],
   getKey: (point: NormalisedPoint) => TBucket & { key: string; label: string; sortIndex: number },
-): Array<{
-  key: string;
-  label: string;
-  sortIndex: number;
-  actualGbp: number | null;
-  forecastGbp: number | null;
-  hasHistorical: boolean;
-  hasForecast: boolean;
-}> {
+): Bucket[] {
   const buckets = new Map<
     string,
     {
@@ -152,6 +256,7 @@ function aggregate<TBucket>(
       sortIndex: number;
       actualGbp: number;
       forecastGbp: number;
+      recommendedGbp: number;
       hasHistorical: boolean;
       hasForecast: boolean;
     }
@@ -165,6 +270,7 @@ function aggregate<TBucket>(
       sortIndex: bucketKey.sortIndex,
       actualGbp: 0,
       forecastGbp: 0,
+      recommendedGbp: 0,
       hasHistorical: false,
       hasForecast: false,
     };
@@ -173,10 +279,13 @@ function aggregate<TBucket>(
       existing.actualGbp += point.actualGbp;
       existing.hasHistorical = true;
     }
+
     if (typeof point.forecastGbp === 'number') {
       existing.forecastGbp += point.forecastGbp;
+      existing.recommendedGbp += point.recommendedGbp ?? applyPlanUplift(point.forecastGbp) ?? point.forecastGbp;
       existing.hasForecast = true;
     }
+
     buckets.set(bucketKey.key, existing);
   }
 
@@ -188,13 +297,48 @@ function aggregate<TBucket>(
       sortIndex: bucket.sortIndex,
       actualGbp: bucket.hasHistorical ? Math.round(bucket.actualGbp) : null,
       forecastGbp: bucket.hasForecast ? Math.round(bucket.forecastGbp) : null,
+      recommendedGbp: bucket.hasForecast ? Math.round(bucket.recommendedGbp) : null,
       hasHistorical: bucket.hasHistorical,
       hasForecast: bucket.hasForecast,
     }));
 }
 
+function buildBucketTimeline(buckets: Bucket[]): TimelinePoint[] {
+  let actualCumulative = 0;
+  let noActionCumulative = 0;
+  let recommendedCumulative = 0;
+  const timeline: TimelinePoint[] = [];
+
+  for (const bucket of buckets) {
+    if (bucket.hasHistorical) {
+      actualCumulative += positiveValue(bucket.actualGbp);
+      noActionCumulative = actualCumulative;
+      recommendedCumulative = actualCumulative;
+      timeline.push({
+        label: bucket.hasForecast ? `${bucket.label} TD` : bucket.label,
+        actualSales: Math.round(actualCumulative),
+        noActionForecast: null,
+        recommendedForecast: null,
+      });
+    }
+
+    if (bucket.hasForecast) {
+      noActionCumulative += positiveValue(bucket.forecastGbp);
+      recommendedCumulative += positiveValue(bucket.recommendedGbp ?? applyPlanUplift(bucket.forecastGbp));
+      timeline.push({
+        label: bucket.hasHistorical ? `${bucket.label} Close` : bucket.label,
+        actualSales: null,
+        noActionForecast: Math.round(noActionCumulative),
+        recommendedForecast: Math.round(recommendedCumulative),
+      });
+    }
+  }
+
+  return markToday(timeline);
+}
+
 function buildPeriodFromBuckets(
-  buckets: ReturnType<typeof aggregate>,
+  buckets: Bucket[],
   target: number,
   beforeCount: number,
   afterCount: number,
@@ -203,7 +347,6 @@ function buildPeriodFromBuckets(
     return buildEmptyPeriod(target);
   }
 
-  // "Today" = the most recent bucket with realised data.
   let pivot = -1;
   for (let i = buckets.length - 1; i >= 0; i -= 1) {
     if (buckets[i].hasHistorical) {
@@ -211,25 +354,13 @@ function buildPeriodFromBuckets(
       break;
     }
   }
-  if (pivot < 0) {
-    pivot = buckets.length - 1;
-  }
 
-  const start = Math.max(0, pivot - beforeCount);
-  const end = Math.min(buckets.length, pivot + afterCount + 1);
-  const window = buckets.slice(start, end);
+  const windowBuckets = takeRecent(buckets, beforeCount, afterCount, pivot >= 0 ? pivot : buckets.length - 1);
+  const timeline = buildBucketTimeline(windowBuckets);
 
   return {
     target,
-    points: window.map((bucket) => {
-      const isToday = bucket === buckets[pivot];
-      const noAction = isToday
-        ? bucket.actualGbp ?? bucket.forecastGbp
-        : bucket.hasHistorical
-          ? null
-          : bucket.forecastGbp;
-      return toMomentumPoint(bucket.label, bucket.actualGbp, noAction, target, isToday);
-    }),
+    points: timeline.map((point) => toMomentumPoint(point, target)),
   };
 }
 
@@ -286,33 +417,34 @@ function buildSalesMomentum(points: NormalisedPoint[], options: BuildOptions = {
   };
 }
 
-// ─── Public adapters ────────────────────────────────────────────────────────
-
 /**
  * Convert the analytics pipeline snapshot (volumes in Hl) into the frontend's
- * {@link SalesMomentumData} contract. The chart is currency-agnostic in its UI
- * formatting but expects £ values, so we apply the meta-provided rate (or a
- * documented fallback) here.
+ * SalesMomentumData contract. Snapshot rows are weekly increments, so the
+ * cumulative timeline is built from the exact row-level actual/forecast values.
  */
 export function adaptSnapshotToSalesMomentum(
   payload: BackendWeeklyForecastPayload,
   options: BuildOptions = {},
 ): SalesMomentumData {
-  const revenuePerHl = payload.meta?.revenuePerHlGbp ?? DEFAULT_REVENUE_PER_HL_GBP;
+  const revenuePerHl = deriveRevenuePerHl(payload);
 
   const normalised: NormalisedPoint[] = payload.series
-    .map((row: BackendWeeklyForecastRow) => {
+    .map((row: BackendWeeklyForecastRow): NormalisedPoint | null => {
       const date = parseDate(row.fecha);
       if (Number.isNaN(date.getTime())) {
         return null;
       }
+
       const actualHl = row.venta_real_historica;
       const forecastHl = row.prediccion_futura;
+      const isHistorical = row.tipo === 'historico';
+
       return {
         date,
-        isHistorical: row.tipo === 'historico',
-        actualGbp: typeof actualHl === 'number' ? Math.round(actualHl * revenuePerHl) : null,
-        forecastGbp: typeof forecastHl === 'number' ? Math.round(forecastHl * revenuePerHl) : null,
+        isHistorical,
+        actualGbp: isHistorical && typeof actualHl === 'number' ? Math.round(actualHl * revenuePerHl) : null,
+        forecastGbp: !isHistorical && typeof forecastHl === 'number' ? Math.round(forecastHl * revenuePerHl) : null,
+        recommendedGbp: null,
       } satisfies NormalisedPoint;
     })
     .filter((point): point is NormalisedPoint => point !== null);
@@ -320,17 +452,11 @@ export function adaptSnapshotToSalesMomentum(
   return buildSalesMomentum(normalised, options);
 }
 
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
 /**
- * Convert the live `/api/forecast` response (already £-denominated) into the
- * frontend's {@link SalesMomentumData} contract.
- *
- * The API uses display-friendly labels like "May 04" rather than ISO dates,
- * so we don't try to parse them — we synthesise chronological dates anchored
- * on "today": the last historical point becomes the current week, with each
- * neighbour ±7 days from there. That keeps month/quarter/year bucketing
- * meaningful regardless of which window the backend returns.
+ * Convert the live `/api/forecast` response into the frontend's cumulative
+ * SalesMomentumData contract. The API forecast is already cumulative within
+ * the active month, so we first difference it into weekly increments and then
+ * build one cumulative timeline from those increments.
  */
 export function adaptApiForecastToSalesMomentum(
   series: BackendForecastPoint[],
@@ -340,8 +466,6 @@ export function adaptApiForecastToSalesMomentum(
     return buildSalesMomentum([], options);
   }
 
-  // Pivot on the last historical row; default to the last point if the API
-  // returned only forecasts.
   let pivotIndex = -1;
   for (let i = series.length - 1; i >= 0; i -= 1) {
     if (typeof series[i].actual === 'number') {
@@ -353,16 +477,38 @@ export function adaptApiForecastToSalesMomentum(
     pivotIndex = series.length - 1;
   }
 
-  const anchor = new Date();
-  anchor.setUTCHours(0, 0, 0, 0);
-  const anchorTime = anchor.getTime();
+  let previousNoActionCumulative = 0;
+  let previousRecommendedCumulative = 0;
 
-  const normalised: NormalisedPoint[] = series.map((point, i) => ({
-    date: new Date(anchorTime + (i - pivotIndex) * WEEK_MS),
-    isHistorical: typeof point.actual === 'number',
-    actualGbp: typeof point.actual === 'number' ? point.actual : null,
-    forecastGbp: typeof point.forecast === 'number' ? point.forecast : null,
-  }));
+  const normalised: NormalisedPoint[] = series.map((point, i) => {
+    const fallbackDate = new Date();
+    fallbackDate.setUTCHours(0, 0, 0, 0);
+    fallbackDate.setUTCDate(fallbackDate.getUTCDate() + (i - pivotIndex) * 7);
+    const isHistorical = typeof point.actual === 'number';
+    const noActionCumulative = isHistorical
+      ? point.actual ?? previousNoActionCumulative
+      : point.forecast ?? previousNoActionCumulative;
+    const forecastIncrement = !isHistorical
+      ? noActionCumulative - previousNoActionCumulative
+      : null;
+    const recommendedCumulative = isHistorical
+      ? noActionCumulative
+      : point.actionForecast ??
+        previousRecommendedCumulative + (applyPlanUplift(forecastIncrement) ?? positiveValue(forecastIncrement));
+
+    const normalisedPoint: NormalisedPoint = {
+      date: parseApiForecastDate(point.date, fallbackDate),
+      isHistorical,
+      actualGbp: isHistorical ? noActionCumulative - previousNoActionCumulative : null,
+      forecastGbp: forecastIncrement,
+      recommendedGbp: !isHistorical ? recommendedCumulative - previousRecommendedCumulative : null,
+    };
+
+    previousNoActionCumulative = noActionCumulative;
+    previousRecommendedCumulative = recommendedCumulative;
+
+    return normalisedPoint;
+  });
 
   return buildSalesMomentum(normalised, options);
 }

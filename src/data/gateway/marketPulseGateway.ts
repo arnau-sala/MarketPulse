@@ -100,19 +100,19 @@ async function trySnapshot(): Promise<SalesMomentumData | null> {
 
 /**
  * Loads the sales-momentum dataset with a layered strategy:
- *   1. Live FastAPI (`GET /api/forecast`) — preferred.
- *   2. Static analytics snapshot (`/forecast_results.json`) — when the API is down.
- *   3. Bundled mock — guarantees the UI keeps rendering offline.
+ *   1. Static analytics snapshot (`/forecast_results.json`) - real pipeline output.
+ *   2. Live FastAPI (`GET /api/forecast`) - fallback while the API has no processed CSV.
+ *   3. Bundled mock - guarantees the UI keeps rendering offline.
  */
 export async function loadSalesMomentumData(): Promise<SalesMomentumResult> {
-  const apiData = await tryApi();
-  if (apiData) {
-    return { data: apiData, source: 'api' };
-  }
-
   const snapshotData = await trySnapshot();
   if (snapshotData) {
     return { data: snapshotData, source: 'snapshot' };
+  }
+
+  const apiData = await tryApi();
+  if (apiData) {
+    return { data: apiData, source: 'api' };
   }
 
   return { data: mockSalesMomentumData, source: 'mock' };
